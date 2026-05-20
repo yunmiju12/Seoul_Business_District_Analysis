@@ -1,0 +1,271 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f3f6fb;
+  color: #111827;
+  font-family:
+    "Pretendard",
+    "Noto Sans KR",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+#root {
+  width: 1700px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.dashboard {
+  width: 100%;
+  margin: 0 auto;
+  padding: 30px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  padding: 32px;
+  margin-bottom: 24px;
+  color: rgb(255, 255, 255);
+  border-radius: 28px;
+  background: linear-gradient(135deg, #9db9fa, #0044ff);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.2;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.kpi-card,
+.chart-card,
+.loading-box,
+.error-box {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.kpi-card {
+  padding: 22px;
+}
+
+.kpi-card span {
+  display: block;
+  margin-bottom: 12px;
+  color: #2777e6;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.kpi-card strong {
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+
+.chart-grid {
+  display: grid;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.one-col {
+  grid-template-columns: 1fr;
+}
+
+.chart-card {
+  padding: 20px 20px 50px 20px;
+  overflow: hidden;
+}
+
+.chart-title {
+  margin-bottom: 10px;
+}
+
+.chart-title h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.chart-title p {
+  margin: 0;
+  color: #2777e6;
+  font-size: 18px;
+}
+
+.with-control {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  gap: 80px;
+}
+
+select {
+  min-width: 130px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chart-tooltip {
+  min-width: 160px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+}
+
+.chart-tooltip strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.chart-tooltip p {
+  margin: 4px 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+/* =========================
+   연령별 시간대 업종 소비
+========================= */
+
+.time-age-chart-card {
+  padding-bottom: 70px;
+}
+
+.time-age-chart-card .chart-title {
+  margin-bottom: 20px;
+}
+
+.time-age-chart-card .with-control {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  gap: 80px;
+}
+.time-age-chart-card .with-control .timeAgeBox{
+  margin-right: 20%;
+}
+
+.time-age-chart-card select {
+  min-width: 150px;
+  padding: 10px 14px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.time-age-chart-card select:hover {
+  border-color: #3b82f6;
+}
+
+.time-age-chart-card select:focus {
+  outline: none;
+  border-color: #2563eb;
+
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.time-age-chart-card .recharts-legend-wrapper {
+  padding-top: 18px;
+}
+
+.risk-map-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.risk-cell {
+  min-height: 112px;
+  padding: 16px;
+  border-radius: 20px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.risk-cell:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+}
+
+.risk-cell strong {
+  font-size: 20px;
+}
+
+.risk-cell span {
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.risk-cell em {
+  font-style: normal;
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+.risk-high {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+}
+
+.risk-mid {
+  background: linear-gradient(135deg, #ff9100, #c2410c);
+}
+
+.risk-low {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.loading-box,
+.error-box {
+  padding: 40px;
+  text-align: center;
+}
+
+.error-box {
+  border-color: #fecaca;
+  background: #fff1f2;
+}
