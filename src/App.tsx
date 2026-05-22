@@ -1197,7 +1197,7 @@ function App() {
                 <span>
                   평균 임대료:{" "}
                   {row.rent > 0
-                    ? `${formatNumber(row.rent)}원`
+                    ? `${formatNumber(row.rent)}`
                     : "데이터 없음"}
                 </span>
               </div>
