@@ -66,6 +66,17 @@ body {
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
 }
 
+.chart-grid.one-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+
+.wide-chart {
+  width: 100%;
+  min-height: 520px;
+}
+
 .kpi-card {
   padding: 22px;
 }
@@ -98,7 +109,7 @@ body {
 }
 
 .chart-card {
-  padding: 20px 20px 50px 20px;
+  padding: 20px;
   overflow: hidden;
 }
 
@@ -120,14 +131,14 @@ body {
 
 .with-control {
   display: flex;
-  justify-content: right;
+  justify-content: center;
   align-items: center;
-  gap: 80px;
+  gap: 20px;
 }
 
 select {
   min-width: 130px;
-  padding: 10px 12px;
+  padding: 10px;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   background: white;
@@ -159,7 +170,7 @@ select {
 ========================= */
 
 .time-age-chart-card {
-  padding-bottom: 70px;
+  padding-bottom: 50px;
 }
 
 .time-age-chart-card .chart-title {
@@ -170,15 +181,15 @@ select {
   display: flex;
   justify-content: right;
   align-items: center;
-  gap: 80px;
+  gap: 50px;
 }
 .time-age-chart-card .with-control .timeAgeBox{
   margin-right: 20%;
 }
 
 .time-age-chart-card select {
-  min-width: 150px;
-  padding: 10px 14px;
+  min-width: 130px;
+  padding: 10px;
 
   border: 1px solid #d1d5db;
   border-radius: 14px;
@@ -190,7 +201,7 @@ select {
 
   cursor: pointer;
 
-  transition: all 0.2s ease;
+  transition: all 0.5s ease;
 }
 
 .time-age-chart-card select:hover {
@@ -215,48 +226,90 @@ select {
 }
 
 .risk-cell {
+  position: relative;
   min-height: 112px;
+  border-radius: 20px;
+  cursor: pointer;
+  overflow: hidden;
+  perspective: 1000px;
+}
+
+/* 앞면 / 뒷면 공통 */
+.risk-front,
+.risk-back {
+  position: absolute;
+  inset: 0;
+
   padding: 16px;
   border-radius: 20px;
-  color: white;
+
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+
+  backface-visibility: hidden;
+
+  transition: transform 0.5s ease;
 }
 
-.risk-cell:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+/* 앞면 */
+.risk-front {
+  transform: rotateY(0deg);
 }
 
-.risk-cell strong {
+/* 뒷면 */
+.risk-back {
+  background: #111827;
+  color: white;
+
+  transform: rotateY(180deg);
+
+  font-size: 14px;
+  text-align: center;
+}
+
+/* hover 시 뒤집힘 */
+.risk-cell:hover .risk-front {
+  transform: rotateY(180deg);
+}
+
+.risk-cell:hover .risk-back {
+  transform: rotateY(0deg);
+}
+
+/* 텍스트 */
+.risk-front strong,
+.risk-back strong {
   font-size: 20px;
 }
 
-.risk-cell span {
-  font-size: 24px;
-  font-weight: 900;
+.risk-front span,
+.risk-back span {
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.risk-cell em {
+.risk-front em {
   font-style: normal;
   font-size: 18px;
   opacity: 0.9;
 }
 
-.risk-high {
-  background: linear-gradient(135deg, #dc2626, #991b1b);
+.risk-high .risk-front {
+  background: #f34f4f;
+  color: white;
 }
 
-.risk-mid {
-  background: linear-gradient(135deg, #ff9100, #c2410c);
+.risk-mid .risk-front {
+  background:#ffb300;
+  color: #1f2937;
 }
 
-.risk-low {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+.risk-low .risk-front {
+  background: #16a34a;
+  color: white;
 }
 
 .loading-box,
@@ -268,4 +321,41 @@ select {
 .error-box {
   border-color: #fecaca;
   background: #fff1f2;
+}
+
+/* 히트맵 범례 */
+.heatmap-legend {
+  display: flex;
+  justify-content: flex-start;
+  gap: 18px;
+  margin-top: 12px;
+  margin-bottom: 18px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.heatmap-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-block;
+  
+}
+
+.legend-danger {
+  background: #f34f4f;
+}
+
+.legend-warning {
+  background: #ffb300;
+}
+
+.legend-safe {
+  background: #16a34a;
 }
