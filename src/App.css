@@ -52,7 +52,7 @@ body {
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
+  gap: 24px;
   margin-bottom: 24px;
 }
 
@@ -118,7 +118,7 @@ body {
 }
 
 .chart-title h2 {
-  margin: 0 0 6px;
+  margin: 10px 0 0;
   font-size: 22px;
   font-weight: 600;
 }
@@ -181,7 +181,7 @@ select {
   display: flex;
   justify-content: right;
   align-items: center;
-  gap: 50px;
+  gap: 60px;
 }
 .time-age-chart-card .with-control .timeAgeBox{
   margin-right: 20%;
@@ -251,7 +251,7 @@ select {
 
   backface-visibility: hidden;
 
-  transition: transform 0.5s ease;
+  transition: transform 1.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* 앞면 */
@@ -326,7 +326,7 @@ select {
 /* 히트맵 범례 */
 .heatmap-legend {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 18px;
   margin-top: 12px;
   margin-bottom: 18px;
@@ -358,4 +358,243 @@ select {
 
 .legend-safe {
   background: #16a34a;
+}
+
+.chart-title-between {
+  justify-content: space-between !important;
+  text-align: left;
+}
+
+.chart-title-between select {
+  flex-shrink: 0;
+}
+
+.chart-title-filter {
+  position: relative;
+  min-height: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.chart-title-filter h2 {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.chart-title-filter select {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.chart-title-filter p {
+  display: none;
+}
+
+/* 생존년수 그래프는 하단 legend/텍스트 없이 사용 */
+.recharts-legend-wrapper:empty {
+  display: none;
+}
+
+/* =========================
+   지도형 위험도 시각화
+========================= */
+
+.seoul-map-grid {
+  width: min(980px, 100%);
+  margin: 10px auto 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(110px, 1fr));
+  gap: 12px;
+  padding: 18px;
+  border-radius: 24px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.seoul-map-cell {
+  min-height: 74px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.seoul-map-cell:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.16);
+}
+
+.seoul-map-cell strong {
+  font-size: 18px;
+}
+
+.seoul-map-cell span {
+  font-size: 14px;
+  opacity: 0.95;
+}
+
+.seoul-map-cell.risk-mid {
+  color: #1f2937;
+}
+
+@media (max-width: 1024px) {
+  .kpi-grid,
+  .two-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .risk-map-grid,
+  .seoul-map-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .chart-title-filter {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .chart-title-filter select {
+    position: static;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard {
+    padding: 16px;
+  }
+
+  .kpi-grid,
+  .two-col,
+  .risk-map-grid,
+  .seoul-map-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.seoul-map-cell.risk-high {
+  background: #f34f4f;
+}
+
+.seoul-map-cell.risk-mid {
+  background: #ffb300;
+}
+
+.seoul-map-cell.risk-low {
+  background: #16a34a;
+}
+
+/* =========================
+   머신러닝 차트 세로 배치 보정
+   - App.tsx에서 머신러닝 영역을 chart-grid one-col로 변경했을 때
+   - 각 차트가 한 줄씩 넓게 보이도록 높이와 여백을 보정
+========================= */
+
+/* 한 줄짜리 차트 영역은 위아래 간격을 넉넉하게 둠 */
+.chart-grid.one-col {
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-bottom: 28px;
+}
+
+/* 차트 카드 안에서 Recharts가 잘리지 않도록 최소 높이 확보 */
+.chart-grid.one-col .chart-card {
+  width: 100%;
+  min-height: 430px;
+  padding: 24px 24px 34px;
+}
+
+/* 머신러닝 모델 성능 비교처럼 x축 모델명이 긴 차트에서 아래쪽 잘림 방지 */
+.chart-grid.one-col .chart-card .recharts-wrapper {
+  overflow: visible;
+}
+
+/* 범례가 그래프와 너무 붙지 않도록 공통 여백 보정 */
+.chart-grid.one-col .recharts-legend-wrapper {
+  padding-top: 16px;
+}
+
+/* 실제 vs 예측 폐업률 그래프는 선이 많아서 툴팁/범례가 겹치지 않게 여백 확보 */
+.chart-grid.one-col .chart-title + .recharts-responsive-container {
+  margin-top: 8px;
+}
+
+/* 모델명 텍스트가 길 때 X축 라벨이 카드 밖으로 나가지 않도록 보정 */
+.recharts-cartesian-axis-tick text {
+  word-break: keep-all;
+}
+/* =========================
+   지도 자치구 이름 표시
+========================= */
+.district-map-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #111827 !important;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  text-shadow:
+    -1px -1px 0 #ffffff,
+     1px -1px 0 #ffffff,
+    -1px  1px 0 #ffffff,
+     1px  1px 0 #ffffff;
+}
+
+/* leaflet 기본 tooltip 화살표 제거 */
+.district-map-label::before {
+  display: none !important;
+}
+
+/* 지도 업종 변경 시 색상 부드럽게 전환 */
+.leaflet-interactive {
+  transition:
+    fill 0.45s ease,
+    fill-opacity 0.45s ease,
+    stroke 0.45s ease;
+}
+
+/* 지도 라벨도 부드럽게 */
+.district-map-label {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+
+
+/* 모바일/태블릿에서도 머신러닝 차트는 무조건 한 칸씩 세로 유지 */
+@media (max-width: 1024px) {
+  .chart-grid.one-col {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-grid.one-col .chart-card {
+    min-height: 400px;
+    padding: 20px 18px 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .chart-grid.one-col .chart-card {
+    min-height: 380px;
+    padding: 18px 14px 30px;
+  }
+
+  .chart-title h2 {
+    font-size: 20px;
+  }
 }

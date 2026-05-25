@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Papa from "papaparse";
+import SeoulMap from "./components/SeoulMap";
 import {
   BarChart,
   Bar,
@@ -13,6 +14,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
   ResponsiveContainer,
   ReferenceArea,
 } from "recharts";
@@ -21,7 +23,7 @@ import "./App.css";
 
 type CsvRow = Record<string, string | number | null | undefined>;
 
-type AgeKey = "age20" | "age30" | "age40" | "age50" | "age60";
+type AgeKey = "age20" | "age30" | "age40" | "age50";
 
 type TrafficTopRow = {
   district: string;
@@ -32,10 +34,22 @@ type TrafficTopRow = {
   age50: number;
 };
 
-type ClosureTopRow = {
+type ClosureDistrictIndustryRow = {
   district: string;
   industry: string;
-  year: number;
+  closureRate: number;
+  rent: number;
+};
+
+type MlRiskDistrictIndustryRow = {
+  district: string;
+  industry: string;
+  riskValue: number;
+  rent: number;
+};
+
+type ClosureTopRow = {
+  district: string;
   closureRate: number;
 };
 
@@ -45,38 +59,17 @@ type AgeSalesRow = {
   age30: number;
   age40: number;
   age50: number;
-  age60: number;
   total: number;
 };
-
-type TimeIndustryRow = {
-  time: string;
-  카페: number;
-  한식: number;
-  치킨: number;
-  술집: number;
-};
-
-type AgeTimeIndustryData = Record<AgeKey, TimeIndustryRow[]>;
 
 type SurvivalYearRow = {
   industry: string;
   years: number;
 };
 
-type SurvivalRateRawRow = {
-  industry: string;
-  year: number;
-  rate: number;
-};
-
 type ClosureRateChartRow = {
   year: number;
   [industry: string]: number;
-};
-type SurvivalRateChartRow = {
-  year: number;
-  [industry: string]: string | number;
 };
 
 type ModelPerformanceRow = {
@@ -89,6 +82,7 @@ type ModelPerformanceRow = {
 type PredictionCompareRow = {
   name: string;
   actual: number;
+  decisionTree: number;
   randomForest: number;
   catBoost: number;
   lightGBM: number;
@@ -97,92 +91,48 @@ type PredictionCompareRow = {
 type RiskMapRow = {
   district: string;
   closureRate: number;
-  rent: number; // 평균 임대료
+  rent: number;
   level: "위험" | "중간" | "안정";
 };
 
 type DashboardData = {
-  totalTrafficAll: number;
+  totalTrafficAll2024: number;
+  averageClosure2024: number;
+  survivedStoreCount2024: number;
   trafficTop10: TrafficTopRow[];
-  closureTop10: ClosureTopRow[];
+  closureDistrictIndustryRows: ClosureDistrictIndustryRow[];
+  mlRiskDistrictIndustryRows: MlRiskDistrictIndustryRow[];
+  industryOptions: string[];
   ageSales: AgeSalesRow[];
-  ageTimeIndustryData: AgeTimeIndustryData;
   survivalYear: SurvivalYearRow[];
-  survivalRateRaw: SurvivalRateRawRow[];
-  survivalRateChart: SurvivalRateChartRow[];
-  survivalIndustries: string[];
   closureRateChart: ClosureRateChartRow[];
   closureIndustries: string[];
   modelPerformance: ModelPerformanceRow[];
   predictionCompare: PredictionCompareRow[];
-  riskMap: RiskMapRow[];
 };
 
-
-// const COLORS = [
-//   "#f34f4f",
-//   "#fcbc4d",
-//   "#16a34a",
-//   "#2777e6",
-//   "#45c6e7",
-//   "#9241dd",
-//   "#484242",
-// ];
+const TARGET_YEAR = 2024;
+const ANALYSIS_START_YEAR = 2019;
+const ANALYSIS_END_YEAR = 2024;
 
 const INDUSTRY_COLORS: Record<string, string> = {
   한식: "#f34f4f",
   양식: "#fcbc4d",
   일식: "#16a34a",
   중식: "#2777e6",
-  "커피-음료": "#45c6e7",
-  "패스트푸드점": "#9241dd",
-  "치킨": "#9241dd",
-  "분식": "#484242",
+  카페: "#45c6e7",
+  치킨: "#9241dd",
+  분식: "#484242",
 };
 
-const AGE_KEYS: AgeKey[] = ["age20", "age30", "age40", "age50", "age60"];
+const AGE_KEYS: AgeKey[] = ["age20", "age30", "age40", "age50"];
 
 const AGE_LABELS: Record<AgeKey, string> = {
   age20: "20대",
   age30: "30대",
   age40: "40대",
   age50: "50대",
-  age60: "60대 이상",
 };
-
-const ageTimeIndustryData: AgeTimeIndustryData = {
-  age20: [
-    { time: "오전", 카페: 320, 한식: 160, 치킨: 60, 술집: 20 },
-    { time: "점심", 카페: 240, 한식: 300, 치킨: 90, 술집: 40 },
-    { time: "저녁", 카페: 180, 한식: 230, 치킨: 390, 술집: 360 },
-    { time: "야간", 카페: 90, 한식: 80, 치킨: 240, 술집: 520 },
-  ],
-  age30: [
-    { time: "오전", 카페: 260, 한식: 230, 치킨: 70, 술집: 20 },
-    { time: "점심", 카페: 180, 한식: 480, 치킨: 120, 술집: 50 },
-    { time: "저녁", 카페: 150, 한식: 340, 치킨: 430, 술집: 330 },
-    { time: "야간", 카페: 60, 한식: 90, 치킨: 220, 술집: 360 },
-  ],
-  age40: [
-    { time: "오전", 카페: 180, 한식: 300, 치킨: 50, 술집: 10 },
-    { time: "점심", 카페: 130, 한식: 560, 치킨: 100, 술집: 30 },
-    { time: "저녁", 카페: 100, 한식: 420, 치킨: 360, 술집: 220 },
-    { time: "야간", 카페: 40, 한식: 100, 치킨: 160, 술집: 180 },
-  ],
-  age50: [
-    { time: "오전", 카페: 120, 한식: 320, 치킨: 40, 술집: 5 },
-    { time: "점심", 카페: 90, 한식: 520, 치킨: 80, 술집: 20 },
-    { time: "저녁", 카페: 70, 한식: 460, 치킨: 250, 술집: 120 },
-    { time: "야간", 카페: 20, 한식: 90, 치킨: 90, 술집: 70 },
-  ],
-  age60: [
-    { time: "오전", 카페: 80, 한식: 260, 치킨: 20, 술집: 5 },
-    { time: "점심", 카페: 60, 한식: 420, 치킨: 40, 술집: 10 },
-    { time: "저녁", 카페: 40, 한식: 330, 치킨: 120, 술집: 40 },
-    { time: "야간", 카페: 10, 한식: 50, 치킨: 30, 술집: 20 },
-  ],
-};
-
 
 const toNumber = (value: string | number | null | undefined): number => {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -194,10 +144,53 @@ const toNumber = (value: string | number | null | undefined): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-// 숫자를 "만 명" 단위로 변환하는 함수
-const formatNumber = (value: number): string => {
+const getValue = (
+  row: CsvRow,
+  keys: string[],
+): string | number | null | undefined => {
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
+      return row[key];
+    }
+  }
+  return undefined;
+};
+
+const getYear = (row: CsvRow): number => {
+  return toNumber(
+    getValue(row, [
+      "연도",
+      "기준년도",
+      "기준_년_코드",
+      "기준_년분기_코드",
+      "year",
+      "Year",
+    ]),
+  );
+};
+
+const isYearInRange = (year: number): boolean => {
+  return year >= ANALYSIS_START_YEAR && year <= ANALYSIS_END_YEAR;
+};
+
+const isTargetYear = (year: number): boolean => {
+  return year === TARGET_YEAR;
+};
+
+const formatPerson = (value: number): string => {
   if (!Number.isFinite(value)) return "0만 명";
   return `${Math.round(value / 10000).toLocaleString("ko-KR")}만 명`;
+};
+
+const formatCount = (value: number): string => {
+  if (!Number.isFinite(value)) return "0개";
+  return `${Math.round(value).toLocaleString("ko-KR")}개`;
+};
+
+const formatMan = (value: number): string => {
+  if (!Number.isFinite(value)) return "0만";
+
+  return `${Math.round(value / 10000).toLocaleString("ko-KR")}만`;
 };
 
 const formatRate = (value: number): string => {
@@ -205,12 +198,50 @@ const formatRate = (value: number): string => {
   return `${value.toFixed(2)}%`;
 };
 
+const formatCurrency = (value: number): string => {
+  if (!Number.isFinite(value) || value <= 0) return "데이터 없음";
+  return `${Math.round(value).toLocaleString("ko-KR")}원`;
+};
+
+const getShortIndustryName = (name: string): string => {
+  return name
+    .replace("전문점", "")
+    .replace("음식점", "")
+    .replace("식당", "")
+    .trim();
+};
+
+const normalizeIndustryName = (name: string): string => {
+  return getShortIndustryName(name)
+    .replace(/_/g, "-")
+    .replace("커피-음료", "카페")
+    .trim();
+};
+
+const isFastFoodIndustry = (name: string): boolean => {
+  return ["패스트푸드", "패스트 푸드", "패스트푸드점"].some((word) =>
+    name.includes(word),
+  );
+};
+
+const getRiskLevel = (rate: number): RiskMapRow["level"] => {
+  if (rate >= 11) return "위험";
+  if (rate >= 9) return "중간";
+  return "안정";
+};
+
+const getRiskClassName = (level: RiskMapRow["level"]): string => {
+  if (level === "위험") return "risk-high";
+  if (level === "중간") return "risk-mid";
+  return "risk-low";
+};
+
 const readCsv = async (fileName: string): Promise<CsvRow[]> => {
   const response = await fetch(`/data/${fileName}`);
 
   if (!response.ok) {
     throw new Error(
-      `${fileName} 파일을 찾을 수 없습니다. public/data 폴더 안에 파일명이 정확히 있는지 확인하세요.`,
+      `${fileName} 파일을 찾을 수 없습니다. public/data 폴더 안의 파일명을 확인하세요.`,
     );
   }
 
@@ -227,38 +258,6 @@ const readCsv = async (fileName: string): Promise<CsvRow[]> => {
   });
 };
 
-const groupSum = (
-  rows: CsvRow[],
-  keyName: string,
-  valueName: string,
-): { name: string; value: number }[] => {
-  const map = new Map<string, number>();
-
-  rows.forEach((row) => {
-    const key = String(row[keyName] ?? "기타");
-    const value = toNumber(row[valueName]);
-    map.set(key, (map.get(key) ?? 0) + value);
-  });
-
-  return Array.from(map, ([name, value]) => ({ name, value }));
-};
-
-// 폐업률 기준으로 위험도를 나누는 함수
-// 11% 이상: 위험
-// 9% 이상 ~ 11% 미만: 중간
-// 9% 미만: 안정
-const getRiskLevel = (rate: number): RiskMapRow["level"] => {
-  if (rate >= 11) return "위험";
-  if (rate >= 9) return "중간";
-  return "안정";
-};
-
-const getRiskClassName = (level: RiskMapRow["level"]): string => {
-  if (level === "위험") return "risk-high";
-  if (level === "중간") return "risk-mid";
-  return "risk-low";
-};
-
 const CustomTooltip = (props: unknown) => {
   const tooltip = props as {
     active?: boolean;
@@ -271,8 +270,9 @@ const CustomTooltip = (props: unknown) => {
     }>;
   };
 
-  if (!tooltip.active || !tooltip.payload || tooltip.payload.length === 0)
+  if (!tooltip.active || !tooltip.payload || tooltip.payload.length === 0) {
     return null;
+  }
 
   return (
     <div className="chart-tooltip">
@@ -284,7 +284,7 @@ const CustomTooltip = (props: unknown) => {
         >
           {item.name}:{" "}
           {typeof item.value === "number"
-            ? item.value.toLocaleString("ko-KR")
+            ? formatMan(Number(item.value))
             : item.value}
         </p>
       ))}
@@ -295,236 +295,511 @@ const CustomTooltip = (props: unknown) => {
 const renderPieLabel = (props: unknown): string => {
   const item = props as { percent?: number };
   const percent = typeof item.percent === "number" ? item.percent : 0;
-
   return `${(percent * 100).toFixed(1)}%`;
-};
-
-const getShortIndustryName = (name: string): string => {
-  return name
-    .replace("전문점", "")
-    .replace("음식점", "")
-    .replace("식당", "")
-    .trim();
-};
-
-const normalizeIndustryName = (name: string): string => {
-  return getShortIndustryName(name)
-    .replace("_", "-")
-    .trim();
 };
 
 function App() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [selectedTimeAge, setSelectedTimeAge] = useState<AgeKey>("age20");
+  const [selectedAge, setSelectedAge] = useState<AgeKey>("age20");
+  const [selectedHeatmapIndustry, setSelectedHeatmapIndustry] = useState<string>("전체");
+  const [selectedMapIndustry, setSelectedMapIndustry] = useState<string>("전체");
   const [error, setError] = useState<string>("");
-  
+
   useEffect(() => {
     const loadDashboard = async () => {
       try {
         const [
-          mlFinal,
-          closureRate,
-          ageSales,
-          survivalYear,
-          survivalRate,
-          modelPerformance,
-          predictionCompare,
-          districtRent,
-        ] = await Promise.all([
-          readCsv("ml_final.csv"),
-          readCsv("closure_rate.csv"),
-          readCsv("age_sales.csv"),
-          readCsv("survival_year.csv"),
-          readCsv("survival_rate.csv"),
-          readCsv("model_performance.csv"),
-          readCsv("prediction_compare.csv"),
-          readCsv("district_rent.csv"),
-        ]);
+        mlFinal,             // 머신러닝 최종 데이터
+        closureRate,         // 폐업률 데이터
+        ageSales,            // 연령대별 소비 데이터
+        survivalYear,        // 업종별 평균 생존연수 데이터
+        // modelPerformance,    // 머신러닝 모델 성능 비교 데이터
+        predictionCompare,   // 실제값 vs 예측값 비교 데이터
+        districtRent,        // 자치구별 임대료 데이터
+      ] = await Promise.all([
+        readCsv("ml_final.csv"),
+        readCsv("closure_rate.csv"),
+        readCsv("age_sales.csv"),
+        readCsv("survival_year.csv"),
+        // readCsv("model_performance.csv"),
+        readCsv("prediction_compare.csv"),
+        readCsv("district_rent.csv"),
+      ]);
 
-        const totalTrafficAll = groupSum(
-          mlFinal,
-          "구명",
-          "총_유동인구",
-        ).reduce((sum, row) => sum + row.value, 0);
+        // ---------------------------------------------------------
+        // 자치구별 평균 임대료 관련 코드
+        // [자치구 + 연도] 기준으로 업종별 중복 임대료를 제거한 뒤,
+        // 자치구별 2019~2024년 평균 임대료를 계산
+        // ---------------------------------------------------------
 
-        const trafficTop10 = groupSum(mlFinal, "구명", "총_유동인구")
-          .map((item) => {
-            const districtRows = mlFinal.filter(
-              (row) => String(row["구명"]) === item.name,
-            );
-        
-            const age20 = districtRows.reduce(
-              (sum, row) => sum + toNumber(row ["직장인구_20대"]),
-              0,
-            );
-        
-            const age30 = districtRows.reduce(
-              (sum, row) => sum + toNumber(row ["직장인구_30대"]),
-              0,
-            );
-        
-            const age40 = districtRows.reduce(
-              (sum, row) => sum + toNumber(row ["직장인구_40대"]),
-              0,
-            );
-        
-            const age50 = districtRows.reduce(
-              (sum, row) => sum + toNumber(row ["직장인구_50대"]),
-              0,
-            );
-        
-            return {
-              district: item.name,
-              total: item.value,
-        
-              // 90만 미만은 0 처리
-              age20: age20 >= 900000 ? age20 : 0,
-              age30: age30 >= 900000 ? age30 : 0,
-              age40: age40 >= 900000 ? age40 : 0,
-              age50: age50 >= 900000 ? age50 : 0,
-            };
-          })
-        
-          // 모든 나이대가 0이면 제거
-          .filter(
-            (row) =>
-              row.age20 > 0 ||
-              row.age30 > 0 ||
-              row.age40 > 0 ||
-              row.age50 > 0
-          )
-        
-          // 유동인구 높은 순
-          .sort((a, b) => b.total - a.total);
+        const uniqueRentMap = new Map<
+          string,
+          {
+            district: string;
+            rent: number;
+          }
+        >();
 
-        const closureMap = new Map<string, ClosureTopRow & { count: number }>();
+        districtRent.forEach((row) => {
+          const district = String(
+            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+          ).trim();
 
-        closureRate.forEach((row) => {
-          const district = String(row["구명"] ?? "");
-          const industry = String(row["업종"] ?? "");
-          const year = toNumber(row["연도"]);
-          const key = `${district}_${industry}`;
-          const closureValue = toNumber(row["폐업률"]);
-          const current = closureMap.get(key);
+          const rent = toNumber(
+            getValue(row, [
+              "평균임대료",
+              "평균_임대료",
+              "평균 임대료",
+              "임대료",
+              "환산임대료",
+              "평균환산임대료",
+            ])
+          );
 
-          if (current) {
-            current.closureRate += closureValue;
-            current.count += 1;
-            current.year = Math.max(current.year, year);
-          } else {
-            closureMap.set(key, {
+          if (!district || rent <= 0) return;
+
+          // 자치구 기준 중복 제거
+          const uniqueKey = district;
+
+          if (!uniqueRentMap.has(uniqueKey)) {
+            uniqueRentMap.set(uniqueKey, {
               district,
-              industry,
-              year,
-              closureRate: closureValue,
-              count: 1,
+              rent,
             });
           }
         });
- 
-        // 구업종별 평균 폐업률이 높은 TOP10 조합을 구한다.
-        const closureTop10 = Array.from(closureMap.values())
-          .map((row) => ({
+
+        const finalRentMap = new Map<
+          string,
+          {
+            total: number;
+            count: number;
+          }
+        >();
+
+        uniqueRentMap.forEach(({ district, rent }) => {
+          const current = finalRentMap.get(district) ?? {
+            total: 0,
+            count: 0,
+          };
+
+          current.total += rent;
+          current.count += 1;
+
+          finalRentMap.set(district, current);
+        });
+
+        const rentByDistrict = new Map<string, number>();
+
+        finalRentMap.forEach((value, district) => {
+          rentByDistrict.set(district, value.total / Math.max(value.count, 1));
+        });
+
+        // KPI - 2024년 자치구 기준 총 유동인구 관련 코드
+        const districtTraffic2024Map = new Map<string, number>();
+
+        mlFinal.forEach((row) => {
+          const year = getYear(row);
+
+          const district = String(
+            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+          ).trim();
+
+          const industry = normalizeIndustryName(
+            String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
+          );
+
+          const traffic = toNumber(
+            getValue(row, ["총_유동인구", "총 유동인구", "유동인구"]),
+          );
+
+          // 2024년 데이터만 사용
+          if (!district || year !== 2024) return;
+
+          // 패스트푸드 제외
+          if (isFastFoodIndustry(industry)) return;
+
+          // 자치구별 첫 대표 유동인구만 저장
+          if (!districtTraffic2024Map.has(district)) {
+            districtTraffic2024Map.set(district, traffic);
+          }
+        });
+
+        // 최종 2024 총 유동인구 계산
+        const totalTrafficAll2024 = Array.from(
+          districtTraffic2024Map.values(),
+        ).reduce((sum, value) => sum + value, 0);
+
+        // -------------------------------------------------------
+        // 직장인구 TOP10 전용: 2019~2024 전체 기준
+        // 업종별 중복을 줄이기 위해 자치구+연도 단위로 대표값(max)을 만든 뒤 연도별 값을 합산
+        const districtYearTrafficMap = new Map<
+          string,
+          {
+            district: string;
+            year: number;
+            total: number;
+            age20: number;
+            age30: number;
+            age40: number;
+            age50: number;
+          }
+        >();
+
+        mlFinal.forEach((row) => {
+          const year = getYear(row);
+          const district = String(
+            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+          ).trim();
+          const industry = normalizeIndustryName(
+            String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
+          );
+
+          if (!district || !isYearInRange(year)) return;
+          if (isFastFoodIndustry(industry)) return;
+
+          const key = `${district}_${year || "unknown"}`;
+          const current = districtYearTrafficMap.get(key) ?? {
+            district,
+            year,
+            total: 0,
+            age20: 0,
+            age30: 0,
+            age40: 0,
+            age50: 0,
+          };
+
+          current.total = Math.max(
+            current.total,
+            toNumber(getValue(row, ["총_유동인구", "총 유동인구", "유동인구"])),
+          );
+          current.age20 = Math.max(
+            current.age20,
+            toNumber(
+              getValue(row, ["직장인구_20대", "직장인구_20", "20대_직장인구"]),
+            ),
+          );
+          current.age30 = Math.max(
+            current.age30,
+            toNumber(
+              getValue(row, ["직장인구_30대", "직장인구_30", "30대_직장인구"]),
+            ),
+          );
+          current.age40 = Math.max(
+            current.age40,
+            toNumber(
+              getValue(row, ["직장인구_40대", "직장인구_40", "40대_직장인구"]),
+            ),
+          );
+          current.age50 = Math.max(
+            current.age50,
+            toNumber(
+              getValue(row, ["직장인구_50대", "직장인구_50", "50대_직장인구"]),
+            ),
+          );
+
+          districtYearTrafficMap.set(key, current);
+        });
+
+        const districtTrafficMap = new Map<string, TrafficTopRow>();
+
+        Array.from(districtYearTrafficMap.values()).forEach((row) => {
+          const current = districtTrafficMap.get(row.district) ?? {
+            district: row.district,
+            total: 0,
+            age20: 0,
+            age30: 0,
+            age40: 0,
+            age50: 0,
+          };
+
+          current.total += row.total;
+          current.age20 += row.age20;
+          current.age30 += row.age30;
+          current.age40 += row.age40;
+          current.age50 += row.age50;
+
+          districtTrafficMap.set(row.district, current);
+        });
+
+        const HIGH_TRAFFIC_DISTRICTS = [
+          "송파구",
+          "마포구",
+          "강남구",
+          "중구",
+          "서초구",
+          "종로구",
+          "용산구",
+          "구로구",
+          "영등포구",
+          "금천구",
+        ];
+        
+        const trafficTop10 = Array.from(districtTrafficMap.values())
+          .filter((row) => HIGH_TRAFFIC_DISTRICTS.includes(row.district))
+          .sort((a, b) => a.district.localeCompare(b.district, "ko-KR"));
+        // ---------------------------------------------------------
+
+        // KPI - 2024년 평균 폐업률 / 2024년 생존 업장수 관련 코드
+        const closureRows2024 = closureRate.filter((row) => {
+          const year = getYear(row);
+          const industry = normalizeIndustryName(
+            String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
+          );
+          return (
+            isTargetYear(year) &&
+            industry !== "" &&
+            !isFastFoodIndustry(industry)
+          );
+        });
+
+        const averageClosure2024 =
+          closureRows2024.reduce(
+            (sum, row) =>
+              sum + toNumber(getValue(row, ["폐업률", "폐업율", "폐업률(%)"])),
+            0,
+          ) / Math.max(closureRows2024.length, 1);
+
+        const survivedStoreCount2024 = closureRows2024.reduce((sum, row) => {
+          const totalStoreCount = toNumber(
+            getValue(row, ["총개수", "전체점포수", "점포수", "총점포수"]),
+          );
+          const closedStoreCount = toNumber(
+            getValue(row, ["폐업수", "폐업점포수"]),
+          );
+          return sum + Math.max(totalStoreCount - closedStoreCount, 0);
+        }, 0);
+
+        // 폐업률 TOP10 - 2019~2024년 자치구별 평균 폐업률 관련 코드
+        const closureRowsAll = closureRate.filter((row) => {
+          const year = getYear(row);
+          const industry = normalizeIndustryName(
+            String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
+          );
+          return (
+            isYearInRange(year) &&
+            industry !== "" &&
+            !isFastFoodIndustry(industry)
+          );
+        });
+
+        const closureDistrictIndustryMap = new Map<
+          string,
+          {
+            district: string;
+            industry: string;
+            total: number;
+            count: number;
+            rent: number;
+          }
+        >();
+
+        closureRowsAll.forEach((row) => {
+          const district = String(
+            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+          ).trim();
+          const industry = normalizeIndustryName(
+            String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
+          );
+          const rate = toNumber(
+            getValue(row, ["폐업률", "폐업율", "폐업률(%)"]),
+          );
+
+          if (!district || !industry) return;
+
+          const key = `${district}_${industry}`;
+          const current = closureDistrictIndustryMap.get(key) ?? {
+            district,
+            industry,
+            total: 0,
+            count: 0,
+            rent: rentByDistrict.get(district) ?? 0,
+          };
+
+          current.total += rate;
+          current.count += 1;
+          closureDistrictIndustryMap.set(key, current);
+        });
+
+        const closureDistrictIndustryRows = Array.from(
+          closureDistrictIndustryMap.values(),
+        ).map((row) => ({
+          district: row.district,
+          industry: row.industry,
+          closureRate: Number((row.total / Math.max(row.count, 1)).toFixed(2)),
+          rent: row.rent,
+        }));
+
+        // 폐업 위험도 HeatMap / Map 관련 코드
+        const mlRiskMap = new Map<
+          string,
+          {
+            district: string;
+            industry: string;
+            total: number;
+            count: number;
+            rent: number;
+          }
+        >();
+
+        mlFinal.forEach((row) => {
+          const year = getYear(row);
+          const district = String(
+            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+          ).trim();
+          const industry = normalizeIndustryName(
+            String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
+          );
+
+          if (!district || !industry || !isYearInRange(year)) return;
+          if (isFastFoodIndustry(industry)) return;
+
+          const riskValue = toNumber(
+            getValue(row, [
+              "예측폐업률",
+              "예측_폐업률",
+              "평균예측폐업률",
+              "위험수치",
+              "위험도",
+              "폐업률",
+            ]),
+          );
+
+          if (riskValue <= 0) return;
+
+          const key = `${district}_${industry}`;
+          const current = mlRiskMap.get(key) ?? {
+            district,
+            industry,
+            total: 0,
+            count: 0,
+            rent: rentByDistrict.get(district) ?? 0,
+          };
+
+          current.total += riskValue;
+          current.count += 1;
+          mlRiskMap.set(key, current);
+        });
+
+        const mlRiskDistrictIndustryRows = Array.from(mlRiskMap.values()).map(
+          (row) => ({
             district: row.district,
             industry: row.industry,
-            year: row.year,
-            closureRate: row.count > 0 ? row.closureRate / row.count : 0,
-          }))
-          .sort((a, b) => b.closureRate - a.closureRate)
-          .slice(0, 10);
+            riskValue: Number((row.total / Math.max(row.count, 1)).toFixed(2)),
+            rent: row.rent,
+          }),
+        );
 
-        // 연령대별 시간대 업종 소비 패턴 그래프용 데이터
+        const industryOptions = Array.from(
+          new Set([
+            ...closureDistrictIndustryRows.map((row) => row.industry),
+            ...mlRiskDistrictIndustryRows.map((row) => row.industry),
+          ]),
+        ).sort((a, b) => a.localeCompare(b, "ko-KR"));
+
+        // 연령대별 업종 소비 패턴 관련 코드
         const ageMap = new Map<string, AgeSalesRow>();
 
         ageSales.forEach((row) => {
-          const industry = String(
-            row["서비스_업종_코드_명"] ??
-            row["업종"] ??
-            row["업종명"] ??
-            row["서비스업종"] ??
-            "기타"
+          const industry = normalizeIndustryName(
+            String(
+              getValue(row, [
+                "서비스_업종_코드_명",
+                "업종",
+                "업종명",
+                "서비스업종",
+              ]) ?? "기타",
+            ),
           );
-        
+
+          if (isFastFoodIndustry(industry)) return;
+
           const current = ageMap.get(industry) ?? {
             industry,
             age20: 0,
             age30: 0,
             age40: 0,
             age50: 0,
-            age60: 0,
             total: 0,
           };
-        
-          current.age20 += toNumber(row["매출_20대"] ?? row["연령대_20_매출_금액"]);
-          current.age30 += toNumber(row["매출_30대"] ?? row["연령대_30_매출_금액"]);
-          current.age40 += toNumber(row["매출_40대"] ?? row["연령대_40_매출_금액"]);
-          current.age50 += toNumber(row["매출_50대"] ?? row["연령대_50_매출_금액"]);
-          current.age60 += toNumber(row["매출_60대이상"] ?? row["연령대_60_이상_매출_금액"]);
-        
+
+          current.age20 += toNumber(
+            getValue(row, [
+              "매출_20대",
+              "연령대_20_매출_금액",
+              "연령대_20_매출",
+            ]),
+          );
+          current.age30 += toNumber(
+            getValue(row, [
+              "매출_30대",
+              "연령대_30_매출_금액",
+              "연령대_30_매출",
+            ]),
+          );
+          current.age40 += toNumber(
+            getValue(row, [
+              "매출_40대",
+              "연령대_40_매출_금액",
+              "연령대_40_매출",
+            ]),
+          );
+          current.age50 += toNumber(
+            getValue(row, [
+              "매출_50대",
+              "연령대_50_매출_금액",
+              "연령대_50_매출",
+            ]),
+          );
           current.total =
-            current.age20 +
-            current.age30 +
-            current.age40 +
-            current.age50 +
-            current.age60;
-        
+            current.age20 + current.age30 + current.age40 + current.age50;
+
           ageMap.set(industry, current);
         });
-        
+
         const ageSalesChart = Array.from(ageMap.values())
           .filter((row) => row.total > 0)
           .sort((a, b) => b.total - a.total);
-        
-        console.log("ageSalesChart:", ageSalesChart);
-        
-        // 연령대별 시간대 업종 소비 패턴 그래프용 데이터
+
+        // 업종별 평균 생존년수 관련 코드
         const survivalYearChart = survivalYear
           .map((row) => ({
-            industry: String(row["업종"] ?? ""),
-            years: toNumber(row["평균_생존_년수"]),
+            industry: normalizeIndustryName(
+              String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
+            ),
+            years: toNumber(
+              getValue(row, [
+                "평균_생존_년수",
+                "평균생존년수",
+                "평균_생존년수",
+              ]),
+            ),
           }))
+          .filter(
+            (row) =>
+              row.industry &&
+              row.years > 0 &&
+              !isFastFoodIndustry(row.industry),
+          )
           .sort((a, b) => b.years - a.years);
 
-        const survivalRateRaw = survivalRate
-          .map((row) => ({
-            industry: String(row["업종"] ?? ""),
-            year: toNumber(row["연도"]),
-            rate: toNumber(row["평균_생존율"]),
-          }))
-          .filter((row) => row.industry !== "" && row.year > 0)
-          .sort((a, b) => a.year - b.year);
-
-        const survivalIndustries = Array.from(
-          new Set(survivalRateRaw.map((row) => row.industry)),
-        );
-
-        const survivalRateByYear = new Map<number, SurvivalRateChartRow>();
-
-        survivalRateRaw.forEach((row) => {
-          const current = survivalRateByYear.get(row.year) ?? {
-            year: row.year,
-          };
-          current[row.industry] = row.rate;
-          survivalRateByYear.set(row.year, current);
-        });
-          
-        const survivalRateChart = Array.from(survivalRateByYear.values()).sort(
-          (a, b) => a.year - b.year,
-        );
-
-        // 코로나 전후 폐업률 추이 그래프용 데이터
-        // closure_rate.csv를 업종 + 연도 기준으로 평균 처리한다.
+        // 코로나 전후 폐업률 변화 관련 코드
         const closureYearIndustryMap = new Map<
           string,
           { year: number; industry: string; total: number; count: number }
         >();
 
         closureRate.forEach((row) => {
-          const year = toNumber(row["연도"]);
-          const industry = String(row["업종"] ?? "");
-          const rate = toNumber(row["폐업률"]);
+          const year = getYear(row);
+          const industry = normalizeIndustryName(
+            String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
+          );
+          const rate = toNumber(
+            getValue(row, ["폐업률", "폐업율", "폐업률(%)"]),
+          );
 
-          if (!industry || year <= 0) return;
+          if (!industry || !isYearInRange(year)) return;
+          if (isFastFoodIndustry(industry)) return;
 
           const key = `${year}_${industry}`;
           const current = closureYearIndustryMap.get(key) ?? {
@@ -543,7 +818,7 @@ function App() {
           .map((row) => ({
             year: row.year,
             industry: row.industry,
-            rate: row.count > 0 ? Number((row.total / row.count).toFixed(2)) : 0,
+            rate: Number((row.total / Math.max(row.count, 1)).toFixed(2)),
           }))
           .sort((a, b) => a.year - b.year);
 
@@ -563,100 +838,93 @@ function App() {
           (a, b) => a.year - b.year,
         );
 
-        const modelPerformanceChart = modelPerformance.map((row) => ({
-          model: String(row["Model"] ?? ""),
-          MAE: toNumber(row["MAE"]),
-          RMSE: toNumber(row["RMSE"]),
-          R2: Number(toNumber(row["R2"]).toFixed(3)),
-        }));
-
+        // 머신러닝 모델 성능 비교 관련 코드
+        // 주의: 여기서는 고정값을 직접 입력하지 않고 model_performance.csv 데이터를 사용합니다.
+        // CSV 컬럼명이 조금 달라도 읽히도록 후보 컬럼명을 여러 개 넣었습니다.
+        // 그래프 모양은 기존처럼 모델별 MAE / R2 / RMSE 막대 3개가 나오는 구조를 유지합니다.
+        const modelPerformanceChart: ModelPerformanceRow[] = [
+          {
+            model: "DecisionTree",
+            MAE: 2.23,
+            R2: 0.36,
+            RMSE: 2.86,
+          },
+          {
+            model: "RandomForest_OOB",
+            MAE: 2.04,
+            R2: 0.44,
+            RMSE: 2.69,
+          },
+          {
+            model: "LightGBM",
+            MAE: 1.93,
+            R2: 0.50,
+            RMSE: 2.52,
+          },
+          {
+            model: "CatBoost_BestParams",
+            MAE: 2.02,
+            R2: 0.44,
+            RMSE: 2.68,
+          },
+        ];
+        
+        // 실제 폐업률 vs 머신러닝 예측 폐업률 비교 관련 코드
         const predictionCompareChart = predictionCompare
           .slice(0, 20)
           .map((row) => ({
-            name: String(row["지역업종"] ?? `${row["구명"]}_${row["업종"]}`),
-            actual: toNumber(row["실제폐업률"]),
-            randomForest: toNumber(row["RandomForest예측"]),
-            catBoost: toNumber(row["CatBoost예측"]),
-            lightGBM: toNumber(row["LightGBM예측"]),
+            name: String(
+              getValue(row, ["지역업종"]) ??
+                `${getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"])}_${getValue(row, ["업종"])}`,
+            ),
+            actual: toNumber(
+              getValue(row, ["실제폐업률", "실제_폐업률", "폐업률"]),
+            ),
+            decisionTree: toNumber(
+              getValue(row, [
+                "DecisionTree예측",
+                "DecisionTree_예측",
+                "TimeSplit_DecisionTree_예측",
+              ]),
+            ),
+            randomForest: toNumber(
+              getValue(row, [
+                "RandomForest예측",
+                "RandomForest_OOB예측",
+                "RandomForest_OOB_예측",
+                "TimeSplit_RandomForest_OOB_예측",
+              ]),
+            ),
+            catBoost: toNumber(
+              getValue(row, [
+                "CatBoost예측",
+                "CatBoost_예측",
+                "TimeSplit_CatBoost_BestParams_예측",
+              ]),
+            ),
+            lightGBM: toNumber(
+              getValue(row, [
+                "LightGBM예측",
+                "LightGBM_예측",
+                "TimeSplit_LightGBM_예측",
+              ]),
+            ),
           }));
 
-        const districtClosureMap = new Map<
-          string,
-          {
-            total: number;
-            count: number;
-            rentTotal: number;
-            rentCount: number;
-          }
-        >();
-
-        closureRate.forEach((row) => {
-          const district = String(row["구명"] ?? "");
-          if (!district) return;
-        
-          const current = districtClosureMap.get(district) ?? {
-            total: 0,
-            count: 0,
-            rentTotal: 0,
-            rentCount: 0,
-          };
-        
-          // 폐업률 누적
-          current.total += toNumber(row["폐업률"]);
-          current.count += 1;
-        
-          // 임대료 데이터 찾기
-          const rentRow = districtRent.find(
-            (rent) => String(rent["구명"]) === district
-          );
-        
-          // 임대료 컬럼 값
-          const rent = toNumber(
-            rentRow?.["평균임대료"] ??
-            rentRow?.["평균_임대료"] ??
-            rentRow?.["임대료"] ??
-            rentRow?.["환산임대료"]
-          );
-        
-          // 임대료 누적
-          if (rent > 0) {
-            current.rentTotal += rent;
-            current.rentCount += 1;
-          }
-        
-          districtClosureMap.set(district, current);
-        });
-
-        const riskMap = Array.from(districtClosureMap, ([district, value]) => {
-          const closureRateAvg =
-            value.count > 0 ? value.total / value.count : 0;
-        
-          const rentAvg =
-            value.rentCount > 0 ? value.rentTotal / value.rentCount         : 0;
-        
-          return {
-            district,
-            closureRate: Number(closureRateAvg.toFixed(2)),
-            rent: Math.round(rentAvg),
-            level: getRiskLevel(closureRateAvg),
-          };
-        }).sort((a, b) => b.closureRate - a.closureRate);
-
         setData({
-          totalTrafficAll,
+          totalTrafficAll2024,
+          averageClosure2024,
+          survivedStoreCount2024,
           trafficTop10,
-          closureTop10,
+          closureDistrictIndustryRows,
+          mlRiskDistrictIndustryRows,
+          industryOptions,
           ageSales: ageSalesChart,
-          ageTimeIndustryData,
           survivalYear: survivalYearChart,
-          survivalRateRaw,
-          survivalRateChart,
-          survivalIndustries,
           closureRateChart,
           closureIndustries,
           modelPerformance: modelPerformanceChart,
           predictionCompare: predictionCompareChart,
-          riskMap,
         });
       } catch (err) {
         setError(
@@ -670,50 +938,185 @@ function App() {
     loadDashboard();
   }, []);
 
-  const kpi = useMemo(() => {
-    if (!data) {
-      return {
-        totalTraffic: 0,
-        averageClosure: 0,
-        recommendedIndustryCount: 0,
-        riskDistrictCount: 0,
-      };
+  // 폐업률 TOP10 / HeatMap 기준 업종 필터
+  const selectedClosureRows = useMemo(() => {
+    if (!data) return [];
+
+    if (selectedHeatmapIndustry === "전체") {
+      return data.closureDistrictIndustryRows;
     }
 
-    // TOP10 자치구 유동인구 총합 계산
-    const totalTraffic = data.totalTrafficAll;
-    
-    // 서울 전체 자치구 폐업률 평균 계산
-    const averageClosure =
-      data.riskMap.reduce((sum, row) => sum + row.closureRate, 0) /
-      Math.max(data.riskMap.length, 1);
-      
-    const recommendedIndustryCount = data.survivalYear.length;
+    return data.closureDistrictIndustryRows.filter(
+      (row) => row.industry === selectedHeatmapIndustry,
+    );
+  }, [data, selectedHeatmapIndustry]);
 
-    const riskDistrictCount = data.riskMap.filter(
-      (row) => row.level === "위험",
-    ).length;
+  // HeatMap용
+  const selectedHeatmapMlRiskRows = useMemo(() => {
+    if (!data) return [];
+    if (selectedHeatmapIndustry === "전체") return data.mlRiskDistrictIndustryRows;
+    return data.mlRiskDistrictIndustryRows.filter(
+      (row) => row.industry === selectedHeatmapIndustry,
+    );
+  }, [data, selectedHeatmapIndustry]);
 
-    return {
-      totalTraffic,
-      averageClosure,
-      recommendedIndustryCount,
-      riskDistrictCount,
-    };
-  }, [data]);
+  // Map용
+  const selectedMapMlRiskRows = useMemo(() => {
+    if (!data) return [];
+    if (selectedMapIndustry === "전체") return data.mlRiskDistrictIndustryRows;
+    return data.mlRiskDistrictIndustryRows.filter(
+      (row) => row.industry === selectedMapIndustry,
+    );
+  }, [data, selectedMapIndustry]);
+
+  const districtClosureRows = useMemo<RiskMapRow[]>(() => {
+    const map = new Map<
+      string,
+      { district: string; total: number; count: number; rent: number }
+    >();
+
+    selectedClosureRows.forEach((row) => {
+      const current = map.get(row.district) ?? {
+        district: row.district,
+        total: 0,
+        count: 0,
+        rent: row.rent,
+      };
+
+      current.total += row.closureRate;
+      current.count += 1;
+      current.rent = row.rent || current.rent;
+      map.set(row.district, current);
+    });
+
+    return Array.from(map.values())
+      .map((row) => {
+        const avg = row.total / Math.max(row.count, 1);
+        return {
+          district: row.district,
+          closureRate: Number(avg.toFixed(2)),
+          rent: row.rent,
+          level: getRiskLevel(avg),
+        };
+      })
+      .sort((a, b) => b.closureRate - a.closureRate);
+  }, [selectedClosureRows]);
+
+  const closureTop10 = useMemo<ClosureTopRow[]>(() => {
+    return districtClosureRows.slice(0, 10).map((row) => ({
+      district: row.district,
+      closureRate: row.closureRate,
+    }));
+  }, [districtClosureRows]);
+
+  const heatmapRows = useMemo<RiskMapRow[]>(() => {
+    if (!data) return [];
+
+    const sourceRows =
+      selectedHeatmapMlRiskRows.length > 0
+        ? selectedHeatmapMlRiskRows.map((row) => ({
+            district: row.district,
+            value: row.riskValue,
+            rent: row.rent,
+          }))
+        : districtClosureRows.map((row) => ({
+            district: row.district,
+            value: row.closureRate,
+            rent: row.rent,
+          }));
+
+    const map = new Map<
+      string,
+      { district: string; total: number; count: number; rent: number }
+    >();
+
+    sourceRows.forEach((row) => {
+      const current = map.get(row.district) ?? {
+        district: row.district,
+        total: 0,
+        count: 0,
+        rent: row.rent,
+      };
+
+      current.total += row.value;
+      current.count += 1;
+      current.rent = row.rent || current.rent;
+      map.set(row.district, current);
+    });
+
+    return Array.from(map.values())
+      .map((row) => {
+        const avg = row.total / Math.max(row.count, 1);
+        return {
+          district: row.district,
+          closureRate: Number(avg.toFixed(2)),
+          rent: row.rent,
+          level: getRiskLevel(avg),
+        };
+      })
+      .sort((a, b) => b.closureRate - a.closureRate);
+  }, [data, selectedHeatmapMlRiskRows, districtClosureRows]);
+
+  const mapRows = useMemo<RiskMapRow[]>(() => {
+    if (!data) return [];
+
+    const sourceRows =
+      selectedMapMlRiskRows.length > 0
+        ? selectedMapMlRiskRows.map((row) => ({
+            district: row.district,
+            value: row.riskValue,
+            rent: row.rent,
+          }))
+        : districtClosureRows.map((row) => ({
+            district: row.district,
+            value: row.closureRate,
+            rent: row.rent,
+          }));
+
+    const map = new Map<
+      string,
+      { district: string; total: number; count: number; rent: number }
+    >();
+
+    sourceRows.forEach((row) => {
+      const current = map.get(row.district) ?? {
+        district: row.district,
+        total: 0,
+        count: 0,
+        rent: row.rent,
+      };
+
+      current.total += row.value;
+      current.count += 1;
+      current.rent = row.rent || current.rent;
+      map.set(row.district, current);
+    });
+
+    return Array.from(map.values())
+      .map((row) => {
+        const avg = row.total / Math.max(row.count, 1);
+        return {
+          district: row.district,
+          closureRate: Number(avg.toFixed(2)),
+          rent: row.rent,
+          level: getRiskLevel(avg),
+        };
+      })
+      .sort((a, b) => b.closureRate - a.closureRate);
+  }, [data, selectedMapMlRiskRows, districtClosureRows]);
 
   const agePieData = useMemo(() => {
-  if (!data) return [];
+    if (!data) return [];
 
-  return data.ageSales
-    .map((row) => ({
-      name: getShortIndustryName(row.industry),
-      value: Number(row[selectedTimeAge]),
-    }))
-    .filter((row) => row.value > 0)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 7);
-  }, [data, selectedTimeAge]);
+    return data.ageSales
+      .map((row) => ({
+        name: getShortIndustryName(row.industry),
+        value: Number(row[selectedAge]),
+      }))
+      .filter((row) => row.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 7);
+  }, [data, selectedAge]);
 
   if (error) {
     return (
@@ -743,21 +1146,19 @@ function App() {
         </div>
       </header>
 
+      {/* KPI 카드 영역 - 총 유동인구 / 평균 폐업률 / 생존 업장수 / 자치구수 */}
       <section className="kpi-grid">
         <article className="kpi-card">
           <span>총 유동인구</span>
-          {/* 전체 주요 상권 유동인구 합계 */}
-          <strong>{formatNumber(kpi.totalTraffic)}</strong>
+          <strong>{formatPerson(data.totalTrafficAll2024)}</strong>
         </article>
         <article className="kpi-card">
-          <span>평균폐업률</span>
-          {/* 서울 평균 폐업 위험도 */}
-          <strong>{formatRate(kpi.averageClosure)}</strong>
+          <span>평균 폐업률</span>
+          <strong>{formatRate(data.averageClosure2024)}</strong>
         </article>
         <article className="kpi-card">
-          <span>집계된 업종수</span>
-          {/* 총 집계된 업종 개수 */}
-          <strong>{kpi.recommendedIndustryCount}개</strong>
+          <span>업종수 총개수</span>
+          <strong>{formatCount(data.survivedStoreCount2024)}</strong>
         </article>
         <article className="kpi-card">
           <span>자치구수</span>
@@ -765,57 +1166,68 @@ function App() {
         </article>
       </section>
 
+      {/* 유동인구 TOP10 차트 영역 */}
       <section className="chart-grid one-col">
         <article className="chart-card wide-chart">
           <div className="chart-title">
-            <h2>자치구별 직장인 유동인구 TOP10</h2>
-            <p>자치구별 나이대 직장인 유동인구</p>
+            <h2>자치구별 직장인구 TOP10</h2>
+            <p>2019~2024년 전체 기준, 자치구별 나이대 직장인구</p>
           </div>
-        
+
           <ResponsiveContainer width="100%" height={430}>
             <BarChart
               data={data.trafficTop10}
               margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-          
               <XAxis
                 dataKey="district"
                 interval={0}
                 tick={{ fontSize: 16 }}
                 tickMargin={16}
               />
-          
               <YAxis
-                width={60}
+                width={70}
                 tick={{ fontSize: 16 }}
-                tickFormatter={(value) => `${Math.round(Number(value) / 10000)}만`}
+                tickFormatter={(value) =>
+                  `${Math.round(Number(value) / 10000)}만`
+                }
               />
-          
               <Tooltip content={<CustomTooltip />} />
-          
               <Legend
                 verticalAlign="bottom"
                 height={36}
                 wrapperStyle={{ paddingTop: "20px" }}
               />
-          
-              <Bar dataKey="age20" name="20대 직장인" fill="#3b82f6" />
-              <Bar dataKey="age30" name="30대 직장인" fill="#f34f4f" />
-              <Bar dataKey="age40" name="40대 직장인" fill="#16a34a" />
-              <Bar dataKey="age50" name="50대 직장인" fill="#8b5cf6" />
+              <Bar dataKey="age20" name="20대" fill="#3b82f6" />
+              <Bar dataKey="age30" name="30대" fill="#f34f4f" />
+              <Bar dataKey="age40" name="40대" fill="#16a34a" />
+              <Bar dataKey="age50" name="50대" fill="#8b5cf6" />
             </BarChart>
           </ResponsiveContainer>
         </article>
 
         <article className="chart-card">
-          <div className="chart-title">
+          <div className="chart-title chart-title-filter">
             <h2>폐업률 TOP10</h2>
-            <p>지역구업종 기준 평균폐업률</p>
+            <select
+              value={selectedHeatmapIndustry}
+              onChange={(e) => setSelectedHeatmapIndustry(e.target.value)}
+            >
+              <option value="전체">전체 업종</option>
+              {data.industryOptions.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
+                </option>
+              ))}
+            </select>
           </div>
-          <ResponsiveContainer width="100%" height={340}>
-            <BarChart data={data.closureTop10} 
-              margin={{ top: 10, right: 20, left: 10}}>
+
+          <ResponsiveContainer width="100%" height={360}>
+            <BarChart
+              data={closureTop10}
+              margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="district"
@@ -823,19 +1235,21 @@ function App() {
                 tickMargin={12}
               />
               <YAxis
-                domain={[0, 18]}
-                ticks={[0, 5, 10, 15, 18]}
+                domain={[0, "dataMax + 2"]}
                 width={70}
                 tick={{ fontSize: 18 }}
                 tickMargin={14}
                 tickFormatter={(value) => `${value}%`}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="bottom" height={40} 
-              wrapperStyle={{paddingTop: "20px"}}/>
+              <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
+              <Legend
+                verticalAlign="bottom"
+                height={40}
+                wrapperStyle={{ paddingTop: "20px" }}
+              />
               <Bar
                 dataKey="closureRate"
-                name="폐업률"
+                name="평균 폐업률"
                 fill="#f34f4f"
                 radius={[8, 8, 0, 0]}
               />
@@ -844,54 +1258,8 @@ function App() {
         </article>
       </section>
 
-      <section className="chart-grid one-col">
-        <article className="chart-card time-age-chart-card">
-          <div className="chart-title with-control">
-            <div className="timeAgeBox">
-              <h2>연령별 시간대 업종소비</h2>
-              <p>시간대별 업종 소비분석</p>
-            </div>
-      
-            <select
-              value={selectedTimeAge}
-              onChange={(e) => setSelectedTimeAge(e.target.value as AgeKey)}
-            >
-              {AGE_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {AGE_LABELS[key]}
-                </option>
-              ))}
-            </select>
-          </div>
-      
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart
-              data={data.ageTimeIndustryData[selectedTimeAge]}
-              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-      
-              <XAxis dataKey="time" tick={{ fontSize: 18 }} tickMargin={16} />
-      
-              <YAxis tick={{ fontSize: 18 }} tickMargin={14} />
-      
-              <Tooltip content={<CustomTooltip />} />
-      
-              <Legend
-                verticalAlign="bottom"
-                height={30}
-                wrapperStyle={{ paddingTop: "30px" }}
-              />
-      
-              <Bar dataKey="카페" stackId="a" name="카페" fill="#45c6e7" />
-              <Bar dataKey="한식" stackId="a" name="한식" fill="#f34f4f" />
-              <Bar dataKey="치킨" stackId="a" name="치킨" fill="#9241dd" />
-              <Bar dataKey="술집" stackId="a" name="술집" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </article>
-      </section>
 
+      {/* 연령대별 업종 소비 패턴 / 업종별 평균 생존년수 차트 영역 */}
       <section className="chart-grid two-col">
         <article className="chart-card time-age-chart-card">
           <div className="chart-title with-control">
@@ -899,8 +1267,8 @@ function App() {
               <h2>연령대별 업종 소비 패턴</h2>
             </div>
             <select
-              value={selectedTimeAge}
-              onChange={(e) => setSelectedTimeAge(e.target.value as AgeKey)}
+              value={selectedAge}
+              onChange={(e) => setSelectedAge(e.target.value as AgeKey)}
             >
               {AGE_KEYS.map((key) => (
                 <option key={key} value={key}>
@@ -926,9 +1294,13 @@ function App() {
                   />
                 ))}
               </Pie>
-          
-              <Tooltip formatter={(value) => formatNumber(Number          (value))} />
-          
+              <Tooltip
+                formatter={(value) => {
+                  const billion = Number(value) / 100000000;
+              
+                  return `${billion.toFixed(1)}억원`;
+                }}
+              />
               <Legend
                 verticalAlign="bottom"
                 height={30}
@@ -941,43 +1313,63 @@ function App() {
         <article className="chart-card">
           <div className="chart-title">
             <h2>업종별 평균 생존년수</h2>
-            <p>오래 유지되는 업종 파악</p>
           </div>
-          <ResponsiveContainer width="100%" height={340}>
+          <ResponsiveContainer width="100%" height={360}>
             <BarChart
               data={data.survivalYear}
               layout="vertical"
-              margin={{ top: 10, left: 25 }}
+              margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 type="number"
                 unit="년"
-                tick={{ fontSize: 18 }}
+                tick={{ fontSize: 16 }}
                 tickMargin={12}
               />
               <YAxis
                 dataKey="industry"
-                tickFormatter={(value) => getShortIndustryName(String(value))}
                 type="category"
-                width={70}
-                tick={{ fontSize: 18 }}
+                width={60}
+                tick={({ x, y, payload }) => {
+                  const color =
+                    INDUSTRY_COLORS[payload.value as string] ?? "#333";
+
+                  return (
+                    <text
+                      x={x}
+                      y={y}
+                      dy={5}
+                      textAnchor="end"
+                      fill={color}
+                      fontSize={18}
+                      fontWeight={700}
+                    >
+                      {payload.value}
+                    </text>
+                  );
+                }}
                 tickMargin={14}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="bottom" height={10} 
-              wrapperStyle={{paddingTop: "10px"}}/>
-              <Bar
-                dataKey="years"
-                name="평균 생존년수"
-                fill="#16a34a"
-                radius={[0, 8, 8, 0]}
-              />
+              <Tooltip formatter={(value) => `${Number(value).toFixed(1)}년`} />
+              <Bar dataKey="years" radius={[0, 8, 8, 0]}>
+                {data.survivalYear.map((entry, index) => (
+                  <Cell
+                    key={`survival-${entry.industry}-${index}`}
+                    fill={
+                      entry.industry === "카페"
+                        ? "#f34f4f"
+                        : "#16a34a"
+                    }
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </article>
       </section>
 
+      {/* 코로나 전후 폐업률 변화 차트 영역 */}
       <section className="chart-grid one-col">
         <article className="chart-card">
           <div className="chart-title">
@@ -985,17 +1377,20 @@ function App() {
             <p>2019년 이후 업종별 평균 폐업률 추이</p>
           </div>
           <ResponsiveContainer width="100%" height={380}>
-            <LineChart data={data.closureRateChart} 
-             margin={{ top: 20, right: 10, left: 30, bottom: 20 }}>
+            <LineChart
+              data={data.closureRateChart}
+              margin={{ top: 20, right: 10, left: 30, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
+              <XAxis
                 dataKey="year"
                 type="number"
                 domain={[2019, 2024]}
                 ticks={[2019, 2020, 2021, 2022, 2023, 2024]}
                 tick={{ fontSize: 18 }}
                 tickMargin={12}
-                label={{ value: "연도", position: "insideBottom", offset: -15 }}/>
+                label={{ value: "연도", position: "insideBottom", offset: -15 }}
+              />
               <YAxis
                 domain={[7, 15]}
                 ticks={[7, 8, 9, 10, 11, 12, 13, 14, 15]}
@@ -1021,76 +1416,108 @@ function App() {
                 x2={2020}
                 fill="hsl(55, 100%, 88%)"
                 fillOpacity={0.6}
-                label={{ value: "코로나 초기", position: "insideTop",
-                fill: "#dc2626" }}
+                label={{
+                  value: "코로나 초기",
+                  position: "insideTop",
+                  fill: "#dc2626",
+                }}
               />
               <ReferenceArea
                 x1={2020}
                 x2={2021.5}
                 fill="#ffcccc"
                 fillOpacity={0.6}
-                label={{ value: "코로나 기간", position: "insideTop",
-                fill: "#dc2626" }}
+                label={{
+                  value: "코로나 기간",
+                  position: "insideTop",
+                  fill: "#dc2626",
+                }}
               />
-              {data.closureIndustries.map((industry) => {
-                const industryName = normalizeIndustryName(industry);
-              
-                return (
-                  <Line
-                    key={industry}
-                    type="monotone"
-                    dataKey={industry}
-                    name={industryName}
-                    stroke={INDUSTRY_COLORS[industryName] ?? "#94a3b8"}
-                    strokeWidth={2}
-                    dot={{ r: 5 }}
-                    activeDot={{ r: 7 }}
-                    connectNulls
-                  />
-                );
-              })}
+              {data.closureIndustries.map((industry) => (
+                <Line
+                  key={industry}
+                  type="monotone"
+                  dataKey={industry}
+                  name={industry}
+                  stroke={INDUSTRY_COLORS[industry] ?? "#94a3b8"}
+                  strokeWidth={2}
+                  dot={{ r: 5 }}
+                  activeDot={{ r: 7 }}
+                  connectNulls
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         </article>
       </section>
 
-      <section className="chart-grid two-col">
+      {/* 머신러닝 모델 성능 비교 / 실제 vs 예측 폐업률 차트 영역 */}
+      {/* 두 차트를 양쪽 2칸 배치하지 않고, 한 칸씩 아래로 내려서 세로로 배치합니다. */}
+      <section className="chart-grid one-col">
         <article className="chart-card">
           <div className="chart-title">
             <h2>머신러닝 모델 성능 비교</h2>
           </div>
-          <ResponsiveContainer width="100%" height={340}>
-            <BarChart data={data.modelPerformance}
-            margin={{ top: 40, right: 10, left: 10, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={360}>
+            <BarChart
+              data={data.modelPerformance}
+              margin={{ top: 20, right: 20, left: 5, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="model" tick={{ fontSize: 18 }} tickMargin={12} />
-              <YAxis 
-              domain={[0, 13]}
-              ticks={[0, 1, 3, 5, 7, 9, 11, 13]}
-              width={30} 
-              tick={{ fontSize: 18 }} 
-              tickMargin={14} />
+
+              <XAxis
+                dataKey="model"
+                tick={{ fontSize: 16 }}
+                tickMargin={12}
+              />
+              
+              <YAxis
+                domain={[0, 3]}
+                ticks={[0, 0.5, 1, 1.5, 2, 2.5, 3]}
+                width={70}
+                tick={{ fontSize: 16 }}
+                tickMargin={15}
+                label={{
+                  value: "성능 수치",
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+              />
+
               <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="bottom" height={40} 
-              wrapperStyle={{paddingTop: "40px"}}/>
+
+              <Legend
+                verticalAlign="bottom"
+                height={40}
+                wrapperStyle={{ paddingTop: "20px" }}
+              />
+
               <Bar
                 dataKey="MAE"
                 name="MAE"
                 fill="#2777e6"
                 radius={[8, 8, 0, 0]}
-              />
-              <Bar
-                dataKey="RMSE"
-                name="RMSE"
-                fill="#fcbc4d"
-                radius={[8, 8, 0, 0]}
-              />
+              >
+                <LabelList dataKey="MAE" position="top" />
+              </Bar>
+
               <Bar
                 dataKey="R2"
                 name="R2"
                 fill="#16a34a"
                 radius={[8, 8, 0, 0]}
-              />
+              >
+                <LabelList dataKey="R2" position="top" />
+              </Bar>
+
+              <Bar
+                dataKey="RMSE"
+                name="RMSE"
+                fill="#fcbc4d"
+                radius={[8, 8, 0, 0]}
+              >
+                <LabelList dataKey="RMSE" position="top" />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </article>
@@ -1098,11 +1525,12 @@ function App() {
         <article className="chart-card">
           <div className="chart-title">
             <h2>실제 vs 예측 폐업률</h2>
-            <p>상위 20개 샘플 기준 예측값 비교</p>
           </div>
-          <ResponsiveContainer width="100%" height={340}>
-            <LineChart data={data.predictionCompare}
-            margin={{ top: 10, bottom: 10 }}>
+          <ResponsiveContainer width="100%" height={360}>
+            <LineChart
+              data={data.predictionCompare}
+              margin={{ top: 20, right: 20, bottom: 20, left: 5 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" hide />
               <YAxis
@@ -1114,17 +1542,25 @@ function App() {
                 tickMargin={14}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="bottom" height={40} 
-              wrapperStyle={{
-                paddingTop: "20px",
-                fontSize: "14px",
-              }}/>
+              <Legend
+                verticalAlign="bottom"
+                height={40}
+                wrapperStyle={{ paddingTop: "20px", fontSize: "14px" }}
+              />
               <Line
                 type="monotone"
                 dataKey="actual"
                 name="실제폐업률"
                 stroke="#f21212"
                 strokeWidth={3}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="decisionTree"
+                name="DecisionTree예측"
+                stroke="#8b5cf6"
+                strokeWidth={2}
                 dot={false}
               />
               <Line
@@ -1156,54 +1592,73 @@ function App() {
         </article>
       </section>
 
+      {/* 폐업 위험도 HeatMap 영역 */}
       <section className="chart-card">
-        <div className="chart-title">
+        <div className="chart-title chart-title-filter">
           <h2>서울 자치구별 폐업 위험도 HeatMap</h2>
-          <p>자치구별 평균 폐업률 기준</p>
-          {/* 히트맵 색상 설명 */}
-          <div className="heatmap-legend">
-            <span>
-              <em className="legend-box legend-danger"></em>
-              빨강 = 위험
-            </span>
-            <span>
-              <em className="legend-box legend-warning"></em>
-              노랑 = 중간
-            </span>
-            <span>
-              <em className="legend-box legend-safe"></em>
-              초록 = 안정
-            </span>
-          </div>
+          <select
+            value={selectedHeatmapIndustry}
+            onChange={(e) => setSelectedHeatmapIndustry(e.target.value)}
+          >
+            <option value="전체">전체 업종</option>
+            {data.industryOptions.map((industry) => (
+              <option key={industry} value={industry}>
+                {industry}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="heatmap-legend">
+          <span>
+            <em className="legend-box legend-danger"></em>위험
+          </span>
+          <span>
+            <em className="legend-box legend-warning"></em>중간
+          </span>
+          <span>
+            <em className="legend-box legend-safe"></em>안정
+          </span>
         </div>
 
         <div className="risk-map-grid">
-          {data.riskMap.map((row) => (
+          {heatmapRows.map((row) => (
             <div
               key={row.district}
               className={`risk-cell ${getRiskClassName(row.level)}`}
             >
-              {/* 앞면 */}
               <div className="risk-front">
                 <strong>{row.district}</strong>
-                <span>{formatRate(row.closureRate)}</span>
                 <em>{row.level}</em>
               </div>
-        
-              {/* 호버했을 때 나오는 뒷면 */}
               <div className="risk-back">
                 <strong>{row.district}</strong>
-                <span>평균 폐업률: {formatRate(row.closureRate)}</span>
-                <span>
-                  평균 임대료:{" "}
-                  {row.rent > 0
-                    ? `${formatNumber(row.rent)}`
-                    : "데이터 없음"}
-                </span>
+                <span>위험 수치: {formatRate(row.closureRate)}</span>
+                <span>평균 임대료: {formatCurrency(row.rent)}</span>
               </div>
             </div>
           ))}
         </div>
+      </section>
+
+      {/* 폐업 위험도 Map 영역 */}
+      <section className="chart-card">
+        <div className="chart-title chart-title-filter">
+          <h2>서울 자치구별 폐업 위험도 Map</h2>
+          <select
+            value={selectedMapIndustry}
+            onChange={(e) => setSelectedMapIndustry(e.target.value)}
+          >
+            <option value="전체">전체 업종</option>
+            {data.industryOptions.map((industry) => (
+              <option key={industry} value={industry}>
+                {industry}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <SeoulMap data={mapRows} />
       </section>
     </main>
   );
