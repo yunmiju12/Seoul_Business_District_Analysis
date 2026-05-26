@@ -123,7 +123,7 @@ body {
   font-weight: 600;
 }
 
-.chart-title p {
+.chart-title p{
   margin: 0;
   color: #2777e6;
   font-size: 18px;
@@ -183,7 +183,7 @@ select {
   align-items: center;
   gap: 60px;
 }
-.time-age-chart-card .with-control .timeAgeBox{
+.time-age-chart-card .with-control .timeAgeBox {
   margin-right: 20%;
 }
 
@@ -303,7 +303,7 @@ select {
 }
 
 .risk-mid .risk-front {
-  background:#ffb300;
+  background: #ffb300;
   color: #1f2937;
 }
 
@@ -345,7 +345,6 @@ select {
   height: 16px;
   border-radius: 4px;
   display: inline-block;
-  
 }
 
 .legend-danger {
@@ -371,29 +370,37 @@ select {
 
 .chart-title-filter {
   position: relative;
-  min-height: 48px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+  margin-bottom: 24px;
+
   text-align: center;
-  margin-bottom: 18px;
 }
 
 .chart-title-filter h2 {
   margin: 0;
-  width: 100%;
-  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .chart-title-filter select {
   position: absolute;
   right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
+
+  min-width: 140px;
 }
 
 .chart-title-filter p {
-  display: none;
+  margin: 0;
+  color: #2563eb;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 /* 생존년수 그래프는 하단 legend/텍스트 없이 사용 */
@@ -550,9 +557,9 @@ select {
   text-align: center;
   text-shadow:
     -1px -1px 0 #ffffff,
-     1px -1px 0 #ffffff,
-    -1px  1px 0 #ffffff,
-     1px  1px 0 #ffffff;
+    1px -1px 0 #ffffff,
+    -1px 1px 0 #ffffff,
+    1px 1px 0 #ffffff;
 }
 
 /* leaflet 기본 tooltip 화살표 제거 */
@@ -574,7 +581,6 @@ select {
     opacity 0.35s ease,
     transform 0.35s ease;
 }
-
 
 /* 모바일/태블릿에서도 머신러닝 차트는 무조건 한 칸씩 세로 유지 */
 @media (max-width: 1024px) {

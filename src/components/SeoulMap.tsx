@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  MapContainer,
-  GeoJSON,
-} from "react-leaflet";
-
+import { MapContainer, GeoJSON } from "react-leaflet";
 
 type RiskRow = {
   district: string;
@@ -86,15 +82,10 @@ export default function SeoulMap({ data }: Props) {
             }}
             onEachFeature={(feature, layer) => {
               const districtName = getDistrictName(feature);
-            
-              const districtData = data.find(
-                (row) => row.district === districtName,
-              );
-            
+
               layer.bindTooltip(
                 `
-                <strong>${districtName}</strong><br/>
-                ${districtData?.level ?? "데이터 없음"}
+                <strong>${districtName}</strong>
                 `,
                 {
                   permanent: true,

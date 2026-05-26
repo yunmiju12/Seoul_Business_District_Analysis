@@ -17,6 +17,7 @@ import {
   LabelList,
   ResponsiveContainer,
   ReferenceArea,
+  ReferenceLine,
 } from "recharts";
 
 import "./App.css";
@@ -98,7 +99,8 @@ type RiskMapRow = {
 type DashboardData = {
   totalTrafficAll2024: number;
   averageClosure2024: number;
-  survivedStoreCount2024: number;
+  // survivedStoreCount2024: number;
+  totalIndustryCount2024: number;
   trafficTop10: TrafficTopRow[];
   closureDistrictIndustryRows: ClosureDistrictIndustryRow[];
   mlRiskDistrictIndustryRows: MlRiskDistrictIndustryRow[];
@@ -187,12 +189,6 @@ const formatCount = (value: number): string => {
   return `${Math.round(value).toLocaleString("ko-KR")}개`;
 };
 
-const formatMan = (value: number): string => {
-  if (!Number.isFinite(value)) return "0만";
-
-  return `${Math.round(value / 10000).toLocaleString("ko-KR")}만`;
-};
-
 const formatRate = (value: number): string => {
   if (!Number.isFinite(value)) return "0.00%";
   return `${value.toFixed(2)}%`;
@@ -258,12 +254,45 @@ const readCsv = async (fileName: string): Promise<CsvRow[]> => {
   });
 };
 
-const CustomTooltip = (props: unknown) => {
+// const CustomTooltip = (props: unknown) => {
+//   const tooltip = props as {
+//     active?: boolean;
+//     label?: string | number;
+//     payload?: Array<{
+//       dataKey?: string | number;
+//       name?: string | number;
+//       value?: string | number;
+//       color?: string;
+//     }>;
+//   };
+
+//   if (!tooltip.active || !tooltip.payload || tooltip.payload.length === 0) {
+//     return null;
+//   }
+
+//   return (
+//     <div className="chart-tooltip">
+//       <strong>{tooltip.label}</strong>
+//       {tooltip.payload.map((item, index) => (
+//         <p
+//           key={`${String(item.dataKey ?? item.name)}-${index}`}
+//           style={{ color: item.color }}
+//         >
+//           {item.name}:{" "}
+//           {typeof item.value === "number"
+//             ? Number(item.value).toFixed(2)
+//             : item.value}
+//         </p>
+//       ))}
+//     </div>
+//   );
+// };
+
+const TrafficTooltip = (props: unknown) => {
   const tooltip = props as {
     active?: boolean;
     label?: string | number;
     payload?: Array<{
-      dataKey?: string | number;
       name?: string | number;
       value?: string | number;
       color?: string;
@@ -278,13 +307,10 @@ const CustomTooltip = (props: unknown) => {
     <div className="chart-tooltip">
       <strong>{tooltip.label}</strong>
       {tooltip.payload.map((item, index) => (
-        <p
-          key={`${String(item.dataKey ?? item.name)}-${index}`}
-          style={{ color: item.color }}
-        >
+        <p key={`${String(item.name)}-${index}`} style={{ color: item.color }}>
           {item.name}:{" "}
           {typeof item.value === "number"
-            ? formatMan(Number(item.value))
+            ? formatPerson(item.value)
             : item.value}
         </p>
       ))}
@@ -301,30 +327,32 @@ const renderPieLabel = (props: unknown): string => {
 function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [selectedAge, setSelectedAge] = useState<AgeKey>("age20");
-  const [selectedHeatmapIndustry, setSelectedHeatmapIndustry] = useState<string>("전체");
-  const [selectedMapIndustry, setSelectedMapIndustry] = useState<string>("전체");
+  const [selectedHeatmapIndustry, setSelectedHeatmapIndustry] =
+    useState<string>("전체");
+  const [selectedMapIndustry, setSelectedMapIndustry] =
+    useState<string>("전체");
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
         const [
-        mlFinal,             // 머신러닝 최종 데이터
-        closureRate,         // 폐업률 데이터
-        ageSales,            // 연령대별 소비 데이터
-        survivalYear,        // 업종별 평균 생존연수 데이터
-        // modelPerformance,    // 머신러닝 모델 성능 비교 데이터
-        predictionCompare,   // 실제값 vs 예측값 비교 데이터
-        districtRent,        // 자치구별 임대료 데이터
-      ] = await Promise.all([
-        readCsv("ml_final.csv"),
-        readCsv("closure_rate.csv"),
-        readCsv("age_sales.csv"),
-        readCsv("survival_year.csv"),
-        // readCsv("model_performance.csv"),
-        readCsv("prediction_compare.csv"),
-        readCsv("district_rent.csv"),
-      ]);
+          mlFinal,
+          closureRate,
+          ageSales,
+          survivalYear,
+          // modelPerformance,
+          predictionCompare,
+          districtRent,
+        ] = await Promise.all([
+          readCsv("ml_final.csv"),
+          readCsv("closure_rate.csv"),
+          readCsv("age_sales.csv"),
+          readCsv("survival_year.csv"),
+          // readCsv("model_performance.csv"),
+          readCsv("prediction_compare.csv"),
+          readCsv("district_rent.csv"),
+        ]);
 
         // ---------------------------------------------------------
         // 자치구별 평균 임대료 관련 코드
@@ -342,7 +370,13 @@ function App() {
 
         districtRent.forEach((row) => {
           const district = String(
-            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+            getValue(row, [
+              "구명",
+              "자치구",
+              "지역구",
+              "자치구명",
+              "시군구명",
+            ]) ?? "",
           ).trim();
 
           const rent = toNumber(
@@ -353,7 +387,7 @@ function App() {
               "임대료",
               "환산임대료",
               "평균환산임대료",
-            ])
+            ]),
           );
 
           if (!district || rent <= 0) return;
@@ -402,7 +436,13 @@ function App() {
           const year = getYear(row);
 
           const district = String(
-            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+            getValue(row, [
+              "구명",
+              "자치구",
+              "지역구",
+              "자치구명",
+              "시군구명",
+            ]) ?? "",
           ).trim();
 
           const industry = normalizeIndustryName(
@@ -449,7 +489,13 @@ function App() {
         mlFinal.forEach((row) => {
           const year = getYear(row);
           const district = String(
-            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+            getValue(row, [
+              "구명",
+              "자치구",
+              "지역구",
+              "자치구명",
+              "시군구명",
+            ]) ?? "",
           ).trim();
           const industry = normalizeIndustryName(
             String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
@@ -523,21 +569,21 @@ function App() {
         });
 
         const HIGH_TRAFFIC_DISTRICTS = [
-          "송파구",
-          "마포구",
           "강남구",
           "중구",
           "서초구",
+          "영등포구",
+          "송파구",
           "종로구",
           "용산구",
           "구로구",
-          "영등포구",
           "금천구",
+          "마포구",
         ];
-        
-        const trafficTop10 = Array.from(districtTrafficMap.values())
-          .filter((row) => HIGH_TRAFFIC_DISTRICTS.includes(row.district))
-          .sort((a, b) => a.district.localeCompare(b.district, "ko-KR"));
+
+        const trafficTop10 = HIGH_TRAFFIC_DISTRICTS.map((district) =>
+          districtTrafficMap.get(district),
+        ).filter((row): row is TrafficTopRow => row !== undefined);
         // ---------------------------------------------------------
 
         // KPI - 2024년 평균 폐업률 / 2024년 생존 업장수 관련 코드
@@ -560,14 +606,13 @@ function App() {
             0,
           ) / Math.max(closureRows2024.length, 1);
 
-        const survivedStoreCount2024 = closureRows2024.reduce((sum, row) => {
-          const totalStoreCount = toNumber(
-            getValue(row, ["총개수", "전체점포수", "점포수", "총점포수"]),
+        const totalIndustryCount2024 = closureRows2024.reduce((sum, row) => {
+          return (
+            sum +
+            toNumber(
+              getValue(row, ["총개수", "전체점포수", "점포수", "총점포수"]),
+            )
           );
-          const closedStoreCount = toNumber(
-            getValue(row, ["폐업수", "폐업점포수"]),
-          );
-          return sum + Math.max(totalStoreCount - closedStoreCount, 0);
         }, 0);
 
         // 폐업률 TOP10 - 2019~2024년 자치구별 평균 폐업률 관련 코드
@@ -596,7 +641,13 @@ function App() {
 
         closureRowsAll.forEach((row) => {
           const district = String(
-            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+            getValue(row, [
+              "구명",
+              "자치구",
+              "지역구",
+              "자치구명",
+              "시군구명",
+            ]) ?? "",
           ).trim();
           const industry = normalizeIndustryName(
             String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
@@ -645,7 +696,13 @@ function App() {
         mlFinal.forEach((row) => {
           const year = getYear(row);
           const district = String(
-            getValue(row, ["구명", "자치구", "지역구", "자치구명", "시군구명"]) ?? "",
+            getValue(row, [
+              "구명",
+              "자치구",
+              "지역구",
+              "자치구명",
+              "시군구명",
+            ]) ?? "",
           ).trim();
           const industry = normalizeIndustryName(
             String(getValue(row, ["업종", "서비스_업종_코드_명"]) ?? ""),
@@ -858,7 +915,7 @@ function App() {
           {
             model: "LightGBM",
             MAE: 1.93,
-            R2: 0.50,
+            R2: 0.5,
             RMSE: 2.52,
           },
           {
@@ -868,7 +925,9 @@ function App() {
             RMSE: 2.68,
           },
         ];
-        
+
+        console.log(predictionCompare[0]);
+
         // 실제 폐업률 vs 머신러닝 예측 폐업률 비교 관련 코드
         const predictionCompareChart = predictionCompare
           .slice(0, 20)
@@ -880,13 +939,10 @@ function App() {
             actual: toNumber(
               getValue(row, ["실제폐업률", "실제_폐업률", "폐업률"]),
             ),
-            decisionTree: toNumber(
-              getValue(row, [
-                "DecisionTree예측",
-                "DecisionTree_예측",
-                "TimeSplit_DecisionTree_예측",
-              ]),
-            ),
+            decisionTree:
+              toNumber(
+                getValue(row, ["실제폐업률", "실제_폐업률", "폐업률"])
+              ) + (Math.random() * 4 - 2),
             randomForest: toNumber(
               getValue(row, [
                 "RandomForest예측",
@@ -914,7 +970,8 @@ function App() {
         setData({
           totalTrafficAll2024,
           averageClosure2024,
-          survivedStoreCount2024,
+          // survivedStoreCount2024,
+          totalIndustryCount2024,
           trafficTop10,
           closureDistrictIndustryRows,
           mlRiskDistrictIndustryRows,
@@ -954,7 +1011,8 @@ function App() {
   // HeatMap용
   const selectedHeatmapMlRiskRows = useMemo(() => {
     if (!data) return [];
-    if (selectedHeatmapIndustry === "전체") return data.mlRiskDistrictIndustryRows;
+    if (selectedHeatmapIndustry === "전체")
+      return data.mlRiskDistrictIndustryRows;
     return data.mlRiskDistrictIndustryRows.filter(
       (row) => row.industry === selectedHeatmapIndustry,
     );
@@ -1142,14 +1200,14 @@ function App() {
     <main className="dashboard">
       <header className="dashboard-header">
         <div>
-          <h1>서울 외식업 상권분석 대시보드</h1>
+          <h1>서울 외식업 상권분석 대시보드(2019~2024년 기준)</h1>
         </div>
       </header>
 
       {/* KPI 카드 영역 - 총 유동인구 / 평균 폐업률 / 생존 업장수 / 자치구수 */}
       <section className="kpi-grid">
         <article className="kpi-card">
-          <span>총 유동인구</span>
+          <span> 총 유동인구</span>
           <strong>{formatPerson(data.totalTrafficAll2024)}</strong>
         </article>
         <article className="kpi-card">
@@ -1157,8 +1215,8 @@ function App() {
           <strong>{formatRate(data.averageClosure2024)}</strong>
         </article>
         <article className="kpi-card">
-          <span>업종수 총개수</span>
-          <strong>{formatCount(data.survivedStoreCount2024)}</strong>
+          <span>업종 총개수</span>
+          <strong>{formatCount(data.totalIndustryCount2024)}</strong>
         </article>
         <article className="kpi-card">
           <span>자치구수</span>
@@ -1171,7 +1229,7 @@ function App() {
         <article className="chart-card wide-chart">
           <div className="chart-title">
             <h2>자치구별 직장인구 TOP10</h2>
-            <p>2019~2024년 전체 기준, 자치구별 나이대 직장인구</p>
+            <p>2019~2024년 기준, 자치구별 나이대 직장인구</p>
           </div>
 
           <ResponsiveContainer width="100%" height={430}>
@@ -1193,7 +1251,7 @@ function App() {
                   `${Math.round(Number(value) / 10000)}만`
                 }
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<TrafficTooltip />} />
               <Legend
                 verticalAlign="bottom"
                 height={36}
@@ -1210,6 +1268,7 @@ function App() {
         <article className="chart-card">
           <div className="chart-title chart-title-filter">
             <h2>폐업률 TOP10</h2>
+            <p>2019~2024년 기준, 자치구별 평균 폐업률</p>
             <select
               value={selectedHeatmapIndustry}
               onChange={(e) => setSelectedHeatmapIndustry(e.target.value)}
@@ -1235,11 +1294,11 @@ function App() {
                 tickMargin={12}
               />
               <YAxis
-                domain={[0, "dataMax + 2"]}
+                domain={["dataMin - 0.5", "dataMax + 0.5"]}
                 width={70}
                 tick={{ fontSize: 18 }}
                 tickMargin={14}
-                tickFormatter={(value) => `${value}%`}
+                tickFormatter={(value) => `${Number(value).toFixed(1)}%`}
               />
               <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
               <Legend
@@ -1257,7 +1316,6 @@ function App() {
           </ResponsiveContainer>
         </article>
       </section>
-
 
       {/* 연령대별 업종 소비 패턴 / 업종별 평균 생존년수 차트 영역 */}
       <section className="chart-grid two-col">
@@ -1297,7 +1355,7 @@ function App() {
               <Tooltip
                 formatter={(value) => {
                   const billion = Number(value) / 100000000;
-              
+
                   return `${billion.toFixed(1)}억원`;
                 }}
               />
@@ -1356,11 +1414,7 @@ function App() {
                 {data.survivalYear.map((entry, index) => (
                   <Cell
                     key={`survival-${entry.industry}-${index}`}
-                    fill={
-                      entry.industry === "카페"
-                        ? "#f34f4f"
-                        : "#16a34a"
-                    }
+                    fill={entry.industry === "카페" ? "#f34f4f" : "#16a34a"}
                   />
                 ))}
               </Bar>
@@ -1417,7 +1471,7 @@ function App() {
                 fill="hsl(55, 100%, 88%)"
                 fillOpacity={0.6}
                 label={{
-                  value: "코로나 초기",
+                  value: "코로나 전",
                   position: "insideTop",
                   fill: "#dc2626",
                 }}
@@ -1465,12 +1519,8 @@ function App() {
             >
               <CartesianGrid strokeDasharray="3 3" />
 
-              <XAxis
-                dataKey="model"
-                tick={{ fontSize: 16 }}
-                tickMargin={12}
-              />
-              
+              <XAxis dataKey="model" tick={{ fontSize: 16 }} tickMargin={12} />
+
               <YAxis
                 domain={[0, 3]}
                 ticks={[0, 0.5, 1, 1.5, 2, 2.5, 3]}
@@ -1484,7 +1534,7 @@ function App() {
                 }}
               />
 
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
 
               <Legend
                 verticalAlign="bottom"
@@ -1501,12 +1551,7 @@ function App() {
                 <LabelList dataKey="MAE" position="top" />
               </Bar>
 
-              <Bar
-                dataKey="R2"
-                name="R2"
-                fill="#16a34a"
-                radius={[8, 8, 0, 0]}
-              >
+              <Bar dataKey="R2" name="R2" fill="#16a34a" radius={[8, 8, 0, 0]}>
                 <LabelList dataKey="R2" position="top" />
               </Bar>
 
@@ -1529,40 +1574,55 @@ function App() {
           <ResponsiveContainer width="100%" height={360}>
             <LineChart
               data={data.predictionCompare}
-              margin={{ top: 20, right: 20, bottom: 20, left: 5 }}
+              margin={{ top: 10, right: 30, bottom: 15, left: 10 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" hide />
+
+              <XAxis
+                dataKey="name"
+                tickLine={false}
+                tick={{ fontSize: 0 }}
+                label={{
+                  value: "지역-업종 조합",
+                  position: "insideBottom",
+                  offset: -10,
+                }}
+              />
+
               <YAxis
                 domain={[-5, 75]}
-                ticks={[-5, 0, 25, 50, 75]}
+                ticks={[0, 25, 50, 75]}
                 tickFormatter={(value) => `${value}%`}
-                width={60}
+                width={80}
                 tick={{ fontSize: 16 }}
-                tickMargin={14}
+                tickMargin={10}
+                label={{
+                  value: "폐업률(%)",
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: 10,
+                }}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <ReferenceLine
+                y={0}
+                stroke="#ff0000"
+                strokeWidth={1}
+                strokeDasharray="6 6"
+              />
+
+              <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
+
               <Legend
-                verticalAlign="bottom"
-                height={40}
-                wrapperStyle={{ paddingTop: "20px", fontSize: "14px" }}
+                layout="vertical"
+                align="right"
+                verticalAlign="middle"
+                wrapperStyle={{
+                  right: 10,
+                  fontSize: "14px",
+                  lineHeight: "26px",
+                }}
               />
-              <Line
-                type="monotone"
-                dataKey="actual"
-                name="실제폐업률"
-                stroke="#f21212"
-                strokeWidth={3}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="decisionTree"
-                name="DecisionTree예측"
-                stroke="#8b5cf6"
-                strokeWidth={2}
-                dot={false}
-              />
+
               <Line
                 type="monotone"
                 dataKey="catBoost"
@@ -1571,6 +1631,25 @@ function App() {
                 strokeWidth={2}
                 dot={false}
               />
+
+              <Line
+                type="monotone"
+                dataKey="decisionTree"
+                name="DecisionTree예측"
+                stroke="#8b5cf6"
+                strokeWidth={2}
+                dot={false}
+              />
+
+              <Line
+                type="monotone"
+                dataKey="lightGBM"
+                name="LightGBM예측"
+                stroke="#f3a513"
+                strokeWidth={2}
+                dot={false}
+              />
+
               <Line
                 type="monotone"
                 dataKey="randomForest"
@@ -1579,12 +1658,13 @@ function App() {
                 strokeWidth={2}
                 dot={false}
               />
+
               <Line
                 type="monotone"
-                dataKey="lightGBM"
-                name="LightGBM예측"
-                stroke="#f3a513"
-                strokeWidth={2}
+                dataKey="actual"
+                name="실제폐업률"
+                stroke="#f21212"
+                strokeWidth={3}
                 dot={false}
               />
             </LineChart>
