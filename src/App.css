@@ -658,3 +658,145 @@ select {
 .legend-color.safe {
   background: #22c55e;
 }
+
+/* =========================
+   머신러닝 리포트형 섹션
+========================= */
+
+.ml-report-section {
+  margin-bottom: 28px;
+  padding: 18px;
+  border-radius: 28px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.ml-report-main-title {
+  margin: 0 0 18px;
+  font-size: 32px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.ml-report-card,
+.ml-summary-card {
+  padding: 22px;
+  border-radius: 22px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: inset 0 0 18px rgba(15, 23, 42, 0.03);
+}
+
+.ml-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.ml-metric-card {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.ml-metric-card h3 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.ml-best-text {
+  margin: 10px 0 4px;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ml-best-text.blue {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.ml-best-text.orange {
+  color: #ea580c;
+  background: #fff7ed;
+}
+
+.ml-best-text.green {
+  color: #16a34a;
+  background: #ecfdf5;
+}
+
+.ml-desc-text {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ml-summary-card h2 {
+  margin: 0 0 14px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.ml-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.ml-summary-table th,
+.ml-summary-table td {
+  padding: 13px;
+  border: 1px solid #d1d5db;
+  font-size: 15px;
+  text-align: center;
+}
+
+.ml-summary-table th {
+  background: #f8fafc;
+  font-weight: 900;
+}
+
+.ml-summary-table td {
+  font-weight: 700;
+}
+
+.ml-summary-table .best-row {
+  background: #fff7cc;
+}
+
+.ml-final-result {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+@media (max-width: 1024px) {
+  .ml-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ml-report-main-title {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ml-report-section {
+    padding: 16px;
+  }
+
+  .ml-report-main-title {
+    font-size: 22px;
+  }
+}

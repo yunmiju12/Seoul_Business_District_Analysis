@@ -1567,6 +1567,133 @@ function App() {
           </ResponsiveContainer>
         </article>
 
+        {/* 머신러닝 모델 성능 비교 리포트 영역 */}
+        <section className="ml-report-section">
+          <div className="ml-metric-grid">
+            {[ 
+              {
+                key: "MAE",
+                title: "MAE 비교 (낮을수록 좋음)",
+                color: "blue",
+                desc: "예측값과 실제값의 평균 오차를 비교합니다.",
+              },
+              {
+                key: "RMSE",
+                title: "RMSE 비교 (낮을수록 좋음)",
+                color: "orange",
+                desc: "큰 오차에 더 민감한 예측 오차 지표입니다.",
+              },
+              {
+                key: "R2",
+                title: "R² 비교 (높을수록 좋음)",
+                color: "green",
+                desc: "모델이 데이터를 얼마나 잘 설명하는지 보여줍니다.",
+              },
+            ].map((metric) => {
+              const sorted = [...data.modelPerformance].sort((a, b) => {
+                if (metric.key === "R2") {
+                  return b.R2 - a.R2;
+                }
+        
+                return (
+                  a[metric.key as "MAE" | "RMSE"] -
+                  b[metric.key as "MAE" | "RMSE"]
+                );
+              });
+        
+              const bestModel = sorted[0];
+        
+              return (
+                <article key={metric.key} className="ml-metric-card">
+                  <h3>{metric.title}</h3>
+        
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={sorted}
+                      margin={{ top: 20, right: 10, left: -18, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="model"
+                        tick={{ fontSize: 10 }}
+                        angle={-15}
+                        textAnchor="end"
+                        tickMargin={10}
+                        interval={0}
+                        height={50}
+                      />
+                      <YAxis tick={{ fontSize: 12 }} tickMargin={12} />
+                      <Tooltip formatter={(value) => Number(value).toFixed(2)} />
+        
+                      <Bar
+                        dataKey={metric.key}
+                        fill={
+                          metric.color === "blue"
+                            ? "#2777e6"
+                            : metric.color === "orange"
+                              ? "#fcbc4d"
+                              : "#16a34a"
+                        }
+                        radius={[8, 8, 0, 0]}
+                      >
+                        <LabelList dataKey={metric.key} position="top" />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+        
+                  <p className={`ml-best-text ${metric.color}`}>
+                    {bestModel.model}이 가장 우수합니다.
+                  </p>
+                  <p className="ml-desc-text">{metric.desc}</p>
+                </article>
+              );
+            })}
+          </div>
+        
+          <article className="ml-summary-card">
+            <h2>모델 성능 요약 (점수대별 평가)</h2>
+        
+            <table className="ml-summary-table">
+              <thead>
+                <tr>
+                  <th>모델</th>
+                  <th>MAE</th>
+                  <th>RMSE</th>
+                  <th>R²</th>
+                  <th>종합 평가</th>
+                </tr>
+              </thead>
+        
+              <tbody>
+                {[...data.modelPerformance]
+                  .sort((a, b) => a.MAE + a.RMSE - b.R2 - (b.MAE + b.RMSE - a.R2))
+                  .map((row, index) => (
+                    <tr key={row.model} className={index === 0 ? "best-row" : ""}>
+                      <td>{row.model}</td>
+                      <td>{row.MAE.toFixed(2)}</td>
+                      <td>{row.RMSE.toFixed(2)}</td>
+                      <td>{row.R2.toFixed(2)}</td>
+                      <td>
+                        {index === 0
+                          ? "최고 ★★★★★"
+                          : index === 1
+                            ? "좋음 ★★★★☆"
+                            : index === 2
+                              ? "양호 ★★★☆☆"
+                              : "개선 필요 ★★☆☆☆"}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+        
+            <div className="ml-final-result">
+              💡 종합 결론: <strong>LightGBM</strong> 모델이 MAE, RMSE, R² 기준에서
+              가장 안정적인 성능을 보여 실제 폐업률 예측에 가장 적합합니다.
+            </div>
+          </article>
+        </section>
+
         <article className="chart-card">
           <div className="chart-title">
             <h2>실제 vs 예측 폐업률</h2>
