@@ -767,8 +767,13 @@ select {
   font-weight: 700;
 }
 
-.ml-summary-table .best-row {
-  background: #fff7cc;
+.ml-summary-table .best-row,
+.ml-summary-table .good-row {
+  background: #fff3c7;
+  font-weight: 600;
+}
+.ml-summary-table .good-row{
+  border: 2px solid #ff5656;
 }
 
 .ml-final-result {

@@ -1601,7 +1601,7 @@ function App() {
                 );
               });
         
-              const bestModel = sorted[0];
+              // const bestModel = sorted[0];
         
               return (
                 <article key={metric.key} className="ml-metric-card">
@@ -1610,17 +1610,40 @@ function App() {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart
                       data={sorted}
-                      margin={{ top: 20, right: 10, left: -18, bottom: 10 }}
+                      margin={{ top: 20, right: 10, left: -18, bottom: 30 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
                         dataKey="model"
-                        tick={{ fontSize: 10 }}
+                        // tick={{ fontSize: 10 }}
                         angle={-15}
                         textAnchor="end"
                         tickMargin={10}
                         interval={0}
                         height={50}
+                        tick={({ x, y, payload }) => {
+                          const colorMap: Record<string, string> = {
+                            LightGBM: "#22c55e",
+                            CatBoost_BestParams: "#f59e0b",
+                            RandomForest_OOB: "#3b82f6",
+                            DecisionTree: "#ef4444",
+                          };
+                      
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              dy={16}
+                              textAnchor="end"
+                              transform={`rotate(-15, ${x}, ${y})`}
+                              fill={colorMap[payload.value] || "#64748b"}
+                              fontSize={11}
+                              fontWeight={600}
+                            >
+                              {payload.value}
+                            </text>
+                          );
+                        }}
                       />
                       <YAxis tick={{ fontSize: 12 }} tickMargin={12} />
                       <Tooltip formatter={(value) => Number(value).toFixed(2)} />
@@ -1636,15 +1659,15 @@ function App() {
                         }
                         radius={[8, 8, 0, 0]}
                       >
+                        
                         <LabelList dataKey={metric.key} position="top" />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
         
                   <p className={`ml-best-text ${metric.color}`}>
-                    {bestModel.model}이 가장 우수합니다.
+                    {metric.desc}
                   </p>
-                  <p className="ml-desc-text">{metric.desc}</p>
                 </article>
               );
             })}
@@ -1668,7 +1691,16 @@ function App() {
                 {[...data.modelPerformance]
                   .sort((a, b) => a.MAE + a.RMSE - b.R2 - (b.MAE + b.RMSE - a.R2))
                   .map((row, index) => (
-                    <tr key={row.model} className={index === 0 ? "best-row" : ""}>
+                    <tr
+                      key={row.model}
+                      className={
+                        index === 0
+                          ? "best-row"
+                          : index === 1
+                            ? "good-row"
+                            : ""
+                      }
+                    >
                       <td>{row.model}</td>
                       <td>{row.MAE.toFixed(2)}</td>
                       <td>{row.RMSE.toFixed(2)}</td>
@@ -1688,8 +1720,7 @@ function App() {
             </table>
         
             <div className="ml-final-result">
-              💡 종합 결론: <strong>LightGBM</strong> 모델이 MAE, RMSE, R² 기준에서
-              가장 안정적인 성능을 보여 실제 폐업률 예측에 가장 적합합니다.
+              💡 종합 결론: 범주형 데이터 처리에 강점을 가진 <strong>CatBoost</strong> 모델을 활용하여 위험도를 예측하였습니다.
             </div>
           </article>
         </section>
