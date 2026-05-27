@@ -1558,7 +1558,7 @@ function App() {
               <Bar
                 dataKey="RMSE"
                 name="RMSE"
-                fill="#f59e0b"
+                fill="#ea580c"
                 radius={[8, 8, 0, 0]}
               >
                 <LabelList dataKey="RMSE" position="top" />
@@ -1624,7 +1624,7 @@ function App() {
                         tick={({ x, y, payload }) => {
                           const colorMap: Record<string, string> = {
                             LightGBM: "#22c55e",
-                            CatBoost_BestParams: "#f59e0b",
+                            CatBoost_BestParams: "#f5c60b",
                             RandomForest_OOB: "#3b82f6",
                             DecisionTree: "#ef4444",
                           };
@@ -1654,7 +1654,7 @@ function App() {
                           metric.color === "blue"
                             ? "#2777e6"
                             : metric.color === "orange"
-                              ? "#f59e0b"
+                              ? "#ea580c"
                               : "#16a34a"
                         }
                         radius={[8, 8, 0, 0]}
