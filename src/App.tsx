@@ -1558,7 +1558,7 @@ function App() {
               <Bar
                 dataKey="RMSE"
                 name="RMSE"
-                fill="#fcbc4d"
+                fill="#f59e0b"
                 radius={[8, 8, 0, 0]}
               >
                 <LabelList dataKey="RMSE" position="top" />
@@ -1654,7 +1654,7 @@ function App() {
                           metric.color === "blue"
                             ? "#2777e6"
                             : metric.color === "orange"
-                              ? "#fcbc4d"
+                              ? "#f59e0b"
                               : "#16a34a"
                         }
                         radius={[8, 8, 0, 0]}
