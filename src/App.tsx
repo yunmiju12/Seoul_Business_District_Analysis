@@ -1613,6 +1613,7 @@ function App() {
               <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
 
               <Legend
+              // layout="vertical" // 범례가 너무 길어서 세로로 배치하면 공간이 부족해집니다. 가로로 배치하되, 오른쪽 끝으로 정렬해서 최대한 덜 어지럽게 보이도록 했습니다.
                 layout="vertical"
                 align="right"
                 verticalAlign="middle"
@@ -1737,8 +1738,26 @@ function App() {
             ))}
           </select>
         </div>
+        {/* 위험도 범례 */}
+        <div className="map-legend">
+          <div className="legend-item">
+            <span className="legend-color danger"></span>
+            <span>위험</span>
+          </div>
+        
+          <div className="legend-item">
+            <span className="legend-color warning"></span>
+            <span>중간</span>
+          </div>
+        
+          <div className="legend-item">
+            <span className="legend-color safe"></span>
+            <span>안정</span>
+          </div>
+        </div>
 
         <SeoulMap data={mapRows} />
+        
       </section>
     </main>
   );
