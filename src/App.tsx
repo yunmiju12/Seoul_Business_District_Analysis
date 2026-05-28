@@ -1682,6 +1682,7 @@ function App() {
                 type="monotone"
                 dataKey="totalSales"
                 name="총 소비금액"
+                legendType="none"
                 stroke="#0f3c97"
                 strokeWidth={3}
                 dot={{ r: 4 }}
