@@ -1641,7 +1641,7 @@ function App() {
                 orientation="right"
                 width={65}
 
-                domain={[0, 8500000000]}
+                domain={[0, 3500000000]}
                 tick={{ fontSize: 14 }}
                 tickFormatter={(value) =>
                   `${Math.round(Number(value) / 1000000).toLocaleString("ko-KR")}`
