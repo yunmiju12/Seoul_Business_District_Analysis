@@ -1454,7 +1454,7 @@ function App() {
   
   const leftYAxisMax = isAllDistrict
     ? 9000000
-    : Math.ceil((maxTraffic * 1.2) / 100000) * 100000;
+    : Math.ceil((maxTraffic * 1.2) / 10000) * 10000;
 // --------------------------------------------
   // 연령대별 업종 소비 패턴 차트용 데이터 (선택된 연령대 기준 상위 7개 업종)
   const agePieData = useMemo(() => {
@@ -1697,7 +1697,7 @@ function App() {
             </ComposedChart>
           </ResponsiveContainer>
 
-          <div className="integrated-guide-grid">
+          {/* <div className="integrated-guide-grid">
             <div className="integrated-guide-card">
               <strong>차트 해석 가이드</strong>
               <p>막대 높이: 자치구 또는 연령대별 유동인구 규모</p>
@@ -1711,7 +1711,7 @@ function App() {
                 구성이 함께 바뀝니다.
               </p>
             </div>
-          </div>
+          </div> */}
         </article>
 
         {/* 연령대별 업종 소비 패턴 / 업종별 평균 생존년수 차트 영역 */}
@@ -2287,14 +2287,17 @@ function App() {
         </article>
       </section>
 
-      {/* 폐업 위험도 예측 영역/ Map*/}
-      <section className="risk-double-grid">
-        <article className="chart-card">
-          <div className="chart-title chart-title-filter">
-            <h2>서울 폐업위험도 예측</h2>
+      {/* 폐업 위험도 예측 Map 통합 영역 */}
+      <section className="risk-combined-section">
+        <article className="chart-card risk-combined-card">
+          <div className="risk-combined-header">
+            <h2>서울 폐업 위험도 예측 Map</h2>
             <select
-              value={selectedHeatmapIndustry}
-              onChange={(e) => setSelectedHeatmapIndustry(e.target.value)}
+              value={selectedMapIndustry}
+              onChange={(e) => {
+                setSelectedMapIndustry(e.target.value);
+                setSelectedHeatmapIndustry(e.target.value);
+              }}
             >
               <option value="전체">전체 업종</option>
               {data.industryOptions.map((industry) => (
@@ -2305,7 +2308,7 @@ function App() {
             </select>
           </div>
 
-          <div className="heatmap-legend">
+          <div className="risk-combined-legend">
             <span>
               <em className="legend-box legend-danger"></em>위험
             </span>
@@ -2317,59 +2320,28 @@ function App() {
             </span>
           </div>
 
-          <div className="risk-map-grid">
-            {heatmapRows.map((row) => (
-              <div
-                key={row.district}
-                className={`risk-cell ${getRiskClassName(row.level)}`}
-              >
-                <div className="risk-front">
-                  <strong>{row.district}</strong>
-                  <em>{row.level}</em>
+          <div className="risk-combined-map-area">
+            <SeoulMap data={mapRows} />
+
+            <div className="risk-map-grid risk-combined-card-grid">
+              {heatmapRows.map((row) => (
+                <div
+                  key={row.district}
+                  className={`risk-cell ${getRiskClassName(row.level)}`}
+                >
+                  <div className="risk-front">
+                    <strong>{row.district}</strong>
+                    <em>{row.level}</em>
+                  </div>
+                  <div className="risk-back">
+                    <span>위험수치 {formatRate(row.closureRate)}</span>
+                  </div>
                 </div>
-                <div className="risk-back">
-                  <span>위험수치 {formatRate(row.closureRate)}</span>
-                  <span>평균임대료 {formatCurrency(row.rent)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-        {/* 폐업 위험도 Map 영역 */}
-        <article className="chart-card">
-          <div className="chart-title chart-title-filter">
-            <h2>서울 폐업위험도 Map</h2>
-            <select
-              value={selectedMapIndustry}
-              onChange={(e) => setSelectedMapIndustry(e.target.value)}
-            >
-              <option value="전체">전체 업종</option>
-              {data.industryOptions.map((industry) => (
-                <option key={industry} value={industry}>
-                  {industry}
-                </option>
               ))}
-            </select>
-          </div>
-          {/* 위험도 범례 */}
-          <div className="map-legend">
-            <div className="legend-item">
-              <span className="legend-color danger"></span>
-              <span>위험</span>
-            </div>
-
-            <div className="legend-item">
-              <span className="legend-color warning"></span>
-              <span>중간</span>
-            </div>
-
-            <div className="legend-item">
-              <span className="legend-color safe"></span>
-              <span>안정</span>
             </div>
           </div>
 
-          <SeoulMap data={mapRows} />
+          
         </article>
       </section>
     </main>

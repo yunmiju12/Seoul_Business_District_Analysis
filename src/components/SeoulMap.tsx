@@ -4,7 +4,6 @@ import { MapContainer, GeoJSON } from "react-leaflet";
 type RiskRow = {
   district: string;
   closureRate: number;
-  rent: number;
   level: "위험" | "중간" | "안정";
 };
 
@@ -47,9 +46,9 @@ export default function SeoulMap({ data }: Props) {
     >
       <MapContainer
         center={[37.5665, 126.978]} // 서울 중심 좌표
-        zoom={9}
-        minZoom={10.5}
-        maxZoom={10.5}
+        zoom={11}
+        minZoom={10.8}
+        maxZoom={10.8}
         zoomControl={false}
         dragging={false}
         scrollWheelZoom={false}
@@ -82,10 +81,12 @@ export default function SeoulMap({ data }: Props) {
             }}
             onEachFeature={(feature, layer) => {
               const districtName = getDistrictName(feature);
-
+              
               layer.bindTooltip(
                 `
-                <strong>${districtName}</strong>
+                <div class="map-tooltip">
+                  <strong>${districtName}</strong>
+                </div>
                 `,
                 {
                   permanent: true,
