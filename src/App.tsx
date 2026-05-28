@@ -1627,7 +1627,7 @@ function App() {
                   value: "유동인구(명)",
                   angle: -90,
                   position: "insideLeft",
-                  dx: -20,
+                  dx: -5,
                   style: {
                     textAnchor: "middle",
                     fontSize: 17,
@@ -2150,7 +2150,7 @@ function App() {
                 align="right"
                 verticalAlign="middle"
                 wrapperStyle={{
-                  right: 10,
+                  right: -10,
                   fontSize: "12px",
                   lineHeight: "20px",
                 }}
