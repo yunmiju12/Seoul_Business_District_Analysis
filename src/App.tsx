@@ -1529,7 +1529,7 @@ function App() {
             <div>
               <h2>
                 {selectedIntegratedDistrict === DISTRICT_ALL
-                  ? "25개 자치구별 · 연령대별 유동인구 및 업종별 소비 패턴"
+                  ? "서울 자치구 · 연령대별 유동인구 및 업종별 소비 패턴"
                   : `${selectedIntegratedDistrict}  상권 연령별 소비분석`}
               </h2>
             </div>
