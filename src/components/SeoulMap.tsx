@@ -40,16 +40,16 @@ export default function SeoulMap({ data }: Props) {
     <div
       style={{
         width: "100%",
-        height: "520px",
+        height: "500px",
         borderRadius: "20px",
         overflow: "hidden",
       }}
     >
       <MapContainer
-        center={[37.5665, 126.978]}
-        zoom={11}
-        minZoom={11}
-        maxZoom={11}
+        center={[37.5665, 126.978]} // 서울 중심 좌표
+        zoom={9}
+        minZoom={10.5}
+        maxZoom={10.5}
         zoomControl={false}
         dragging={false}
         scrollWheelZoom={false}

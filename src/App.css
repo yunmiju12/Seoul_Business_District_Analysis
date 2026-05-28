@@ -119,14 +119,9 @@ body {
 
 .chart-title h2 {
   margin: 10px 0 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
-}
-
-.chart-title p{
-  margin: 0;
   color: #2777e6;
-  font-size: 18px;
 }
 
 .with-control {
@@ -221,8 +216,8 @@ select {
 
 .risk-map-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
 }
 
 .risk-cell {
@@ -239,15 +234,13 @@ select {
 .risk-back {
   position: absolute;
   inset: 0;
-
-  padding: 16px;
   border-radius: 20px;
 
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 3px;
 
   backface-visibility: hidden;
 
@@ -265,8 +258,6 @@ select {
   color: white;
 
   transform: rotateY(180deg);
-
-  font-size: 14px;
   text-align: center;
 }
 
@@ -279,21 +270,13 @@ select {
   transform: rotateY(0deg);
 }
 
-/* 텍스트 */
-.risk-front strong,
-.risk-back strong {
-  font-size: 20px;
-}
-
 .risk-front span,
 .risk-back span {
-  font-size: 16px;
   font-weight: 700;
 }
 
 .risk-front em {
   font-style: normal;
-  font-size: 18px;
   opacity: 0.9;
 }
 
@@ -375,15 +358,15 @@ select {
   align-items: center;
   justify-content: center;
 
-  gap: 6px;
-  margin-bottom: 24px;
+  gap: 20px;
+  margin-bottom: 18px;
 
   text-align: center;
 }
 
 .chart-title-filter h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -392,15 +375,7 @@ select {
   right: 0;
   top: 0;
 
-  min-width: 140px;
-}
-
-.chart-title-filter p {
-  margin: 0;
-  color: #2563eb;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.4;
+  min-width: 110px;
 }
 
 /* 생존년수 그래프는 하단 legend/텍스트 없이 사용 */
@@ -457,6 +432,7 @@ select {
 .seoul-map-cell.risk-mid {
   color: #1f2937;
 }
+
 
 @media (max-width: 1024px) {
   .kpi-grid,
@@ -624,9 +600,9 @@ select {
 /* 범례 */
 .map-legend {
   display: flex;
-  justify-content: right;
+  justify-content: center;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   margin-right: 16px;
 }
 
@@ -739,7 +715,7 @@ select {
 
 .ml-summary-card h2 {
   margin: 0 0 14px;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
 }
 
@@ -772,7 +748,7 @@ select {
   background: #fff3c7;
   font-weight: 600;
 }
-.ml-summary-table .good-row{
+.ml-summary-table .good-row {
   border: 2px solid #ff5656;
 }
 
@@ -804,4 +780,256 @@ select {
   .ml-report-main-title {
     font-size: 22px;
   }
+}
+
+/* =========================
+   25개 자치구별 · 연령대별 통합 그래프
+========================= */
+.integrated-chart-card {
+  padding: 24px 24px 28px;
+}
+
+.integrated-chart-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.integrated-chart-header h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.integrated-chart-header p {
+  margin: 0;
+  color: #2563eb;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.integrated-chart-header span {
+  flex-shrink: 0;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.integrated-control-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px 260px;
+  gap: 18px;
+  align-items: stretch;
+  padding: 18px;
+  margin-bottom: 20px;
+  border: 1px solid #dbe3ef;
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+.district-button-area,
+.integrated-select-area,
+.integrated-summary-card {
+  text-align: left;
+}
+
+.district-button-area > strong,
+.integrated-select-area strong,
+.integrated-summary-card strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f3c97;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.district-button-list {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(78px, 1fr));
+  gap: 8px;
+}
+
+.district-button-list button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.district-button-list button:hover {
+  border-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.district-button-list button.active {
+  border-color: #0f3c97;
+  background: #0f3c97;
+  color: #ffffff;
+}
+
+.integrated-select-area label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.integrated-select-area select {
+  width: 100%;
+}
+
+.integrated-summary-card {
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  background: #f8fbff;
+}
+
+.integrated-summary-card p {
+  margin: 6px 0 0;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.integrated-guide-grid {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 16px 0 0 50px;
+  justify-content: flex-start;
+}
+
+.integrated-guide-card {
+  width: 440px;
+  padding: 14px 20px;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  background: #ffffff;
+  text-align: left;
+}
+
+.integrated-guide-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f3c97;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.integrated-guide-card p {
+  margin: 2px 0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.integrated-guide-card.highlight {
+  background: #f8fbff;
+}
+
+.integrated-tooltip hr {
+  margin: 8px 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 1280px) {
+  .integrated-control-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .district-button-list {
+    grid-template-columns: repeat(5, minmax(76px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .integrated-chart-header {
+    flex-direction: column;
+  }
+
+  .district-button-list {
+    grid-template-columns: repeat(3, minmax(74px, 1fr));
+  }
+
+  .integrated-guide-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.district-button-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.district-select {
+  min-width: 180px;
+  padding: 12px 14px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: all 0.3s ease;
+}
+
+.district-select:hover {
+  border-color: #3b82f6;
+}
+
+.district-select:focus {
+  outline: none;
+
+  border-color: #2563eb;
+
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+.risk-double-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+  align-items: stretch;
+}
+
+.risk-double-grid .chart-card {
+  width: 100%;
+  height: 100%;
+  margin: 10px;
+}
+.risk-map-grid .risk-front strong{
+  font-size: 20px;
+}
+.risk-map-grid .risk-front em{
+  font-size: 18px;
+}
+.risk-map-grid .risk-back{
+  padding: 16px;
+}
+.risk-map-grid .risk-back span{
+  font-size: 14px;
+}
+.risk-map-grid .risk-back strong{
+  font-size: 16px;
 }
