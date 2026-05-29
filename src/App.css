@@ -286,6 +286,15 @@ select {
   transform: rotateY(0deg);
 }
 
+/* 지도에서 자치구 클릭 시 해당 카드 뒤집힘 */
+.risk-cell.is-flipped .risk-front {
+  transform: rotateY(180deg);
+}
+
+.risk-cell.is-flipped .risk-back {
+  transform: rotateY(0deg);
+}
+
 .risk-front span,
 .risk-back span {
   font-weight: 700;

@@ -9,6 +9,8 @@ type RiskRow = {
 
 type Props = {
   data: RiskRow[];
+  selectedDistrict?: string | null;
+  onDistrictClick?: (district: string) => void;
 };
 
 const getColor = (level: RiskRow["level"]) => {
@@ -26,7 +28,11 @@ const getDistrictName = (feature: any): string => {
   );
 };
 
-export default function SeoulMap({ data }: Props) {
+export default function SeoulMap({
+  data,
+  selectedDistrict,
+  onDistrictClick,
+}: Props) {
   const [geoData, setGeoData] = useState<any>(null);
 
   useEffect(() => {
@@ -45,7 +51,7 @@ export default function SeoulMap({ data }: Props) {
       }}
     >
       <MapContainer
-        center={[37.5665, 126.978]} // 서울 중심 좌표
+        center={[37.5665, 126.978]}
         zoom={11}
         minZoom={10.8}
         maxZoom={10.8}
@@ -62,26 +68,28 @@ export default function SeoulMap({ data }: Props) {
       >
         {geoData && (
           <GeoJSON
+            key={selectedDistrict ?? "none"}
             data={geoData}
             style={(feature) => {
               const districtName = getDistrictName(feature);
-
               const districtData = data.find(
                 (row) => row.district === districtName,
               );
+              const isSelected = selectedDistrict === districtName;
 
               return {
                 fillColor: districtData
                   ? getColor(districtData.level)
                   : "#e5e7eb",
-                weight: 1,
-                color: "#ffffff",
-                fillOpacity: 0.85,
+                weight: isSelected ? 3 : 1,
+                color: isSelected ? "#111827" : "#ffffff",
+                fillOpacity: districtData ? 0.85 : 0.45,
+                cursor: "pointer",
               };
             }}
             onEachFeature={(feature, layer) => {
               const districtName = getDistrictName(feature);
-              
+
               layer.bindTooltip(
                 `
                 <div class="map-tooltip">
@@ -94,6 +102,13 @@ export default function SeoulMap({ data }: Props) {
                   className: "district-map-label",
                 },
               );
+
+              layer.on({
+                click: () => {
+                  if (!districtName) return;
+                  onDistrictClick?.(districtName);
+                },
+              });
             }}
           />
         )}

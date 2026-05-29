@@ -173,7 +173,6 @@ const getValue = (
   }
   return undefined;
 };
-
 const getYear = (row: CsvRow): number => {
   return toNumber(
     getValue(row, [
@@ -370,6 +369,8 @@ function App() {
     useState<string>("전체");
   const [selectedMapIndustry, setSelectedMapIndustry] =
     useState<string>("전체");
+  const [selectedRiskDistrict, setSelectedRiskDistrict] =
+    useState<string | null>(null);
   const [selectedIntegratedDistrict, setSelectedIntegratedDistrict] =
     useState<string>(DISTRICT_ALL);
   const [selectedIntegratedIndustryCount, setSelectedIntegratedIndustryCount] =
@@ -2298,6 +2299,7 @@ function App() {
               onChange={(e) => {
                 setSelectedMapIndustry(e.target.value);
                 setSelectedHeatmapIndustry(e.target.value);
+                setSelectedRiskDistrict(null);
               }}
             >
               <option value="전체">전체 업종</option>
@@ -2322,13 +2324,19 @@ function App() {
           </div>
 
           <div className="risk-combined-map-area">
-            <SeoulMap data={mapRows} />
+            <SeoulMap
+              data={mapRows}
+              selectedDistrict={selectedRiskDistrict}
+              onDistrictClick={(district) => setSelectedRiskDistrict(district)}
+            />
 
             <div className="risk-map-grid risk-combined-card-grid">
               {heatmapRows.map((row) => (
                 <div
                   key={row.district}
-                  className={`risk-cell ${getRiskClassName(row.level)}`}
+                  className={`risk-cell ${getRiskClassName(row.level)} ${
+                    selectedRiskDistrict === row.district ? "is-flipped" : ""
+                  }`}
                 >
                   <div className="risk-front">
                     <strong>{row.district}</strong>
